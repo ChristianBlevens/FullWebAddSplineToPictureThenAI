@@ -1100,23 +1100,13 @@
         }
 
         function calculateDepthAdjustedLightPoints(spline) {
-            // Calculate evenly spaced points along a spline for lights,
-            // with spacing adjusted based on depth
+            // Calculate points along a spline for lights, with density adjusted based on depth
             if (spline.length < 2) return [];
             
             const points = [];
-            const totalLights = 50; // Base number of lights to place
+            const BASE_SPACING = 15; // Base spacing between lights in pixels
             
-            // Calculate total spline length
-            let totalLength = 0;
-            for (let i = 0; i < spline.length - 1; i++) {
-                const dx = spline[i + 1].x - spline[i].x;
-                const dy = spline[i + 1].y - spline[i].y;
-                totalLength += Math.sqrt(dx * dx + dy * dy);
-            }
-            
-            // For each segment of the spline
-            let currentLength = 0;
+            // Process each segment of the spline independently
             for (let i = 0; i < spline.length - 1; i++) {
                 const start = spline[i];
                 const end = spline[i + 1];
@@ -1126,22 +1116,42 @@
                 const dy = end.y - start.y;
                 const segmentLength = Math.sqrt(dx * dx + dy * dy);
                 
-                // Get depth at start and end points
-                const startDepth = getDepthAtPoint(start.x, start.y);
-                const endDepth = getDepthAtPoint(end.x, end.y);
+                // Skip very short segments
+                if (segmentLength < 5) continue;
                 
-                // Number of lights for this segment, proportional to length
-                // and adjusted for depth (more lights in deeper areas to compensate for smaller size)
-                const avgDepth = (startDepth + endDepth) / 2;
-                const depthAdjustment = 1 + (1 - avgDepth); // More lights in deeper (smaller) areas
+                // Sample depths along the segment for more accurate depth-based spacing
+                const samples = 10;
+                let totalDepthAdjustment = 0;
                 
-                const segmentLightCount = Math.max(2, Math.round(
-                    (segmentLength / totalLength) * totalLights * depthAdjustment
-                ));
+                for (let s = 0; s < samples; s++) {
+                    const t = s / (samples - 1);
+                    const sampleX = start.x + dx * t;
+                    const sampleY = start.y + dy * t;
+                    const depth = getDepthAtPoint(sampleX, sampleY);
+                    
+                    // Deeper areas (higher depth value) get higher density (smaller spacing)
+                    // Shallower areas (lower depth value) get lower density (larger spacing)
+                    const depthFactor = 0.5 + (depth * 1.5); // Range from 0.5-2.0 based on depth
+                    totalDepthAdjustment += depthFactor;
+                }
                 
-                // Place lights along this segment with depth-adjusted spacing
-                for (let j = 0; j < segmentLightCount; j++) {
-                    const t = j / (segmentLightCount - 1);
+                // Average depth adjustment for this segment
+                const avgDepthAdjustment = totalDepthAdjustment / samples;
+                
+                // Adjusted spacing between lights based on depth
+                // Deeper areas have smaller spacing (more lights)
+                const spacing = BASE_SPACING / avgDepthAdjustment;
+                
+                // Calculate how many lights to place on this segment
+                const lightCount = Math.max(2, Math.floor(segmentLength / spacing));
+                
+                // Place lights evenly along this segment
+                for (let j = 0; j < lightCount; j++) {
+                    // Don't place a light at the exact end point if this isn't the last segment
+                    // This prevents double lights at junction points
+                    const t = (i < spline.length - 2 && j === lightCount - 1) ? 
+                              0.99 * (j / (lightCount - 1)) : 
+                              j / (lightCount - 1);
                     
                     // Get position along the segment
                     const x = start.x + dx * t;
@@ -1232,17 +1242,29 @@
                 // Save the enhanced image
                 state.enhancedImage = enhanceCanvas.toDataURL('image/jpeg', 0.9);
                 
-                // Update UI
-                elements.enhancedImage.src = state.enhancedImage;
-                elements.resultsContainer.classList.remove('hidden');
-                elements.mapsContainer.classList.add('hidden');
-                
-                // Update instructions
-                elements.instructions.textContent = 'Your enhanced image is ready!';
-                
-                // Hide processing overlay
-                elements.processingOverlay.classList.add('hidden');
-                state.processing = false;
+                // Display enhanced image directly in the main canvas
+                const displayImg = new Image();
+                displayImg.onload = () => {
+                    // Clear the canvas entirely
+                    ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+                    
+                    // Draw the enhanced image on the main canvas
+                    ctx.drawImage(displayImg, 0, 0, elements.canvas.width, elements.canvas.height);
+                    
+                    // Hide maps
+                    elements.mapsContainer.classList.add('hidden');
+                    
+                    // Update instructions
+                    elements.instructions.textContent = 'Your enhanced image is ready!';
+                    
+                    // Hide processing overlay
+                    elements.processingOverlay.classList.add('hidden');
+                    state.processing = false;
+                    
+                    // Stop animation loop since we're replacing it
+                    stopLightsAnimation();
+                };
+                displayImg.src = state.enhancedImage;
             };
             
             img.src = canvasWithLights;
