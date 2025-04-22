@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Lights Photo App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2a4365;
+        }
+        
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #cbd5e0;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            border-bottom: 2px solid #4299e1;
+            font-weight: bold;
+            color: #2b6cb0;
+        }
+        
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a202c;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            aspect-ratio: 16/9;
+        }
+        
+        .input-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        video, img, canvas {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .button-blue {
+            background-color: #3b82f6;
+        }
+        
+        .button-blue:hover:not(:disabled) {
+            background-color: #2563eb;
+        }
+        
+        .button-green {
+            background-color: #10b981;
+        }
+        
+        .button-green:hover:not(:disabled) {
+            background-color: #059669;
+        }
+        
+        .button-purple {
+            background-color: #8b5cf6;
+        }
+        
+        .button-purple:hover:not(:disabled) {
+            background-color: #7c3aed;
+        }
+        
+        .button-red {
+            background-color: #ef4444;
+        }
+        
+        .button-red:hover:not(:disabled) {
+            background-color: #dc2626;
+        }
+        
+        .button-gray {
+            background-color: #6b7280;
+        }
+        
+        .button-gray:hover:not(:disabled) {
+            background-color: #4b5563;
+        }
+        
+        .file-input {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background-color: #3b82f6;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        
+        .file-label:hover {
+            background-color: #2563eb;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .processing-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 10;
+        }
+        
+        .map-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .map-item {
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .map-title {
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+        
+        .crosshair {
+            cursor: crosshair;
+        }
+        
+        .instructions {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        
+        .progress {
+            width: 50%;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #3b82f6;
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: progress-animation 1.5s infinite ease-in-out;
+        }
+        
+        @keyframes progress-animation {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Christmas Lights Photo App</h1>
+        
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div id="cameraTab" class="tab active">Use Camera</div>
+            <div id="fileTab" class="tab">Upload Image</div>
+        </div>
+        
+        <!-- Camera View -->
+        <div id="cameraView">
+            <div class="input-container">
+                <div id="cameraPlaceholder" class="input-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+                        <circle cx="12" cy="13" r="3"></circle>
+                    </svg>
+                    <p>Camera inactive</p>
+                </div>
+                <video id="video" class="hidden" autoplay playsinline></video>
+            </div>
+            <div class="button-container">
+                <button id="startCameraBtn" class="button button-green">Start Camera</button>
+                <button id="takePictureBtn" class="button button-blue hidden">Take Photo</button>
+            </div>
+        </div>
+        
+        <!-- File Upload View -->
+        <div id="fileView" class="hidden">
+            <div class="input-container">
+                <div id="fileUploadPlaceholder" class="input-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>Upload an image</p>
+                </div>
+                <img id="previewImage" class="hidden">
+            </div>
+            <div class="button-container">
+                <input type="file" id="fileInput" class="file-input" accept="image/*">
+                <label for="fileInput" class="file-label">Choose Image</label>
+                <button id="useImageBtn" class="button button-blue hidden">Use This Image</button>
+            </div>
+        </div>
+        
+        <!-- Editor View -->
+        <div id="editorView" class="hidden">
+            <div class="input-container">
+                <canvas id="canvas"></canvas>
+                <div id="processingOverlay" class="processing-overlay hidden">
+                    <p>Processing image...</p>
+                    <div class="progress">
+                        <div class="progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="instructions" class="instructions"></div>
+            
+            <div id="editorButtons" class="button-container">
+                <button id="drawBtn" class="button button-purple">Draw Light Path</button>
+                <button id="clearBtn" class="button button-red" disabled>Clear Points</button>
+                <button id="lightsBtn" class="button button-green" disabled>Apply Christmas Lights</button>
+                <button id="saveBtn" class="button button-blue hidden">Save and Enhance</button>
+                <button id="downloadBtn" class="button button-green hidden">Download Image</button>
+                <button id="resetBtn" class="button button-gray">Start Over</button>
+            </div>
+            
+            <!-- Maps Container -->
+            <div id="mapsContainer" class="map-container hidden">
+                <div id="depthMapContainer" class="map-item">
+                    <div class="map-title">Depth Map</div>
+                    <img id="depthMapImage" width="100%">
+                </div>
+                <div id="lineMapContainer" class="map-item">
+                    <div class="map-title">Line Map</div>
+                    <img id="lineMapImage" width="100%">
+                </div>
+            </div>
+            
+            <!-- Results Container -->
+            <div id="resultsContainer" class="hidden">
+                <div class="input-container">
+                    <img id="enhancedImage" width="100%">
+                </div>
+                <div class="instructions">AI Enhanced Image</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App State
+        const state = {
+            mode: 'camera', // 'camera' or 'file'
+            stream: null,
+            splines: [], // Array of splines, each spline is array of points [{x,y}, {x,y}]
+            activeSplineIndex: -1, // Index of current active spline
+            fullResImage: null, // Original full resolution image
+            lowResImage: null, // Resized image for processing
+            depthMap: null,
+            lineMap: null,
+            drawMode: false,
+            animatingLights: false,
+            animationId: null,
+            processing: false,
+            enhancedImage: null,
+            lastClickedPoint: null // Used for tracking if we clicked on existing point
+        };
+
+        // DOM Elements
+        const elements = {
+            // Tabs
+            cameraTab: document.getElementById('cameraTab'),
+            fileTab: document.getElementById('fileTab'),
+            
+            // Views
+            cameraView: document.getElementById('cameraView'),
+            fileView: document.getElementById('fileView'),
+            editorView: document.getElementById('editorView'),
+            resultsContainer: document.getElementById('resultsContainer'),
+            
+            // Camera Elements
+            video: document.getElementById('video'),
+            cameraPlaceholder: document.getElementById('cameraPlaceholder'),
+            startCameraBtn: document.getElementById('startCameraBtn'),
+            takePictureBtn: document.getElementById('takePictureBtn'),
+            
+            // File Elements
+            fileInput: document.getElementById('fileInput'),
+            previewImage: document.getElementById('previewImage'),
+            fileUploadPlaceholder: document.getElementById('fileUploadPlaceholder'),
+            useImageBtn: document.getElementById('useImageBtn'),
+            
+            // Editor Elements
+            canvas: document.getElementById('canvas'),
+            processingOverlay: document.getElementById('processingOverlay'),
+            instructions: document.getElementById('instructions'),
+            
+            // Maps
+            mapsContainer: document.getElementById('mapsContainer'),
+            depthMapImage: document.getElementById('depthMapImage'),
+            lineMapImage: document.getElementById('lineMapImage'),
+            
+            // Results
+            enhancedImage: document.getElementById('enhancedImage'),
+            
+            // Buttons
+            drawBtn: document.getElementById('drawBtn'),
+            clearBtn: document.getElementById('clearBtn'),
+            lightsBtn: document.getElementById('lightsBtn'),
+            saveBtn: document.getElementById('saveBtn'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            resetBtn: document.getElementById('resetBtn')
+        };
+
+        // Initialize canvas context
+        const ctx = elements.canvas.getContext('2d');
+
+        // -----------------------
+        // Tab Navigation
+        // -----------------------
+        elements.cameraTab.addEventListener('click', () => {
+            if (state.mode === 'camera') return;
+            resetApp();
+            state.mode = 'camera';
+            elements.cameraTab.classList.add('active');
+            elements.fileTab.classList.remove('active');
+            elements.cameraView.classList.remove('hidden');
+            elements.fileView.classList.add('hidden');
+        });
+
+        elements.fileTab.addEventListener('click', () => {
+            if (state.mode === 'file') return;
+            resetApp();
+            // Stop camera if active
+            stopCamera();
+            
+            state.mode = 'file';
+            elements.fileTab.classList.add('active');
+            elements.cameraTab.classList.remove('active');
+            elements.fileView.classList.remove('hidden');
+            elements.cameraView.classList.add('hidden');
+        });
+
+        // -----------------------
+        // Camera Functions
+        // -----------------------
+        elements.startCameraBtn.addEventListener('click', startCamera);
+        
+        async function startCamera() {
+            try {
+                state.stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+                
+                elements.video.srcObject = state.stream;
+                elements.video.classList.remove('hidden');
+                elements.cameraPlaceholder.classList.add('hidden');
+                elements.takePictureBtn.classList.remove('hidden');
+                elements.startCameraBtn.classList.add('hidden');
+                
+                // Play video
+                await elements.video.play();
+                
+            } catch (err) {
+                console.error('Camera error:', err);
+                alert('Could not access camera: ' + err.message);
+            }
+        }
+
+        function stopCamera() {
+            if (state.stream) {
+                state.stream.getTracks().forEach(track => track.stop());
+                state.stream = null;
+            }
+            
+            elements.video.srcObject = null;
+            elements.video.classList.add('hidden');
+            elements.cameraPlaceholder.classList.remove('hidden');
+            elements.takePictureBtn.classList.add('hidden');
+            elements.startCameraBtn.classList.remove('hidden');
+        }
+
+        elements.takePictureBtn.addEventListener('click', captureImage);
+        
+        function captureImage() {
+            // Create a temporary canvas to capture the video frame
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = elements.video.videoWidth;
+            tempCanvas.height = elements.video.videoHeight;
+            
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(elements.video, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Get the full resolution image data
+            state.fullResImage = tempCanvas.toDataURL('image/jpeg', 0.9);
+            
+            // Stop the camera
+            stopCamera();
+            
+            // Process the captured image
+            processImage(state.fullResImage);
+        }
+
+        // -----------------------
+        // File Upload Functions
+        // -----------------------
+        elements.fileInput.addEventListener('change', handleFileSelect);
+        
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file || !file.type.match('image.*')) {
+                alert('Please select a valid image file.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                elements.previewImage.src = event.target.result;
+                elements.previewImage.classList.remove('hidden');
+                elements.fileUploadPlaceholder.classList.add('hidden');
+                elements.useImageBtn.classList.remove('hidden');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        elements.useImageBtn.addEventListener('click', useUploadedImage);
+        
+        function useUploadedImage() {
+            state.fullResImage = elements.previewImage.src;
+            processImage(state.fullResImage);
+        }
+
+        // -----------------------
+        // Image Processing
+        // -----------------------
+        function processImage(imageUrl) {
+            // Show editor view and hide input views
+            elements.cameraView.classList.add('hidden');
+            elements.fileView.classList.add('hidden');
+            elements.editorView.classList.remove('hidden');
+            elements.resultsContainer.classList.add('hidden');
+            
+            // Show processing overlay
+            elements.processingOverlay.classList.remove('hidden');
+            state.processing = true;
+            
+            // Load and resize image for the canvas
+            const img = new Image();
+            img.onload = () => {
+                // Create a lower resolution version for processing
+                state.lowResImage = createLowResVersion(img);
+                
+                // Generate maps (in a real app, these would come from a server)
+                setTimeout(() => {
+                    state.depthMap = createMockDepthMap();
+                    state.lineMap = createMockLineMap();
+                    
+                    elements.depthMapImage.src = state.depthMap;
+                    elements.lineMapImage.src = state.lineMap;
+                    elements.mapsContainer.classList.remove('hidden');
+                    
+                    // Initialize canvas with the FULL RES image
+                    initializeCanvas(state.fullResImage);
+                    
+                    // Hide processing overlay
+                    elements.processingOverlay.classList.add('hidden');
+                    state.processing = false;
+                }, 1500);
+            };
+            
+            img.src = imageUrl;
+        }
+
+        function createLowResVersion(img) {
+            // Create a lower resolution version for better performance
+            const canvas = document.createElement('canvas');
+            
+            // Target resolution (max 640x480)
+            const maxWidth = 640;
+            const maxHeight = 480;
+            
+            let width = img.width;
+            let height = img.height;
+            
+            // Scale down if needed while preserving aspect ratio
+            if (width > height) {
+                if (width > maxWidth) {
+                    height = Math.round(height * maxWidth / width);
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width = Math.round(width * maxHeight / height);
+                    height = maxHeight;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        function initializeCanvas(imageUrl) {
+            const img = new Image();
+            img.onload = () => {
+                // Size canvas to match full-res image but limit to viewport
+                const maxWidth = Math.min(window.innerWidth - 40, img.width);
+                const aspectRatio = img.height / img.width;
+                
+                elements.canvas.width = maxWidth;
+                elements.canvas.height = maxWidth * aspectRatio;
+                
+                // Draw image to canvas
+                ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
+            };
+            
+            img.src = imageUrl;
+        }
+
+        // -----------------------
+        // Mock Map Generation
+        // -----------------------
+        function createMockDepthMap() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            const ctx = canvas.getContext('2d');
+            
+            // Create a gradient from top (far) to bottom (near)
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'black');     // Far
+            gradient.addColorStop(1, 'white');     // Near
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            return canvas.toDataURL();
+        }
+
+        function createMockLineMap() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            const ctx = canvas.getContext('2d');
+            
+            // Black background
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // White lines
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            
+            // Horizontal lines
+            for (let y = 60; y < canvas.height; y += 80) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Vertical lines
+            for (let x = 80; x < canvas.width; x += 120) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Diagonal lines
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(canvas.width, 0);
+            ctx.lineTo(0, canvas.height);
+            ctx.stroke();
+            
+            return canvas.toDataURL();
+        }
+
+        // -----------------------
+        // Drawing Functions
+        // -----------------------
+        elements.drawBtn.addEventListener('click', toggleDrawingMode);
+        
+        function toggleDrawingMode() {
+            state.drawMode = !state.drawMode;
+            
+            if (state.drawMode) {
+                elements.drawBtn.textContent = 'Done Drawing';
+                elements.canvas.classList.add('crosshair');
+                elements.instructions.textContent = 'Click to add points for your Christmas lights';
+            } else {
+                elements.drawBtn.textContent = 'Draw Light Path';
+                elements.canvas.classList.remove('crosshair');
+                elements.instructions.textContent = '';
+            }
+        }
+
+        elements.clearBtn.addEventListener('click', clearPoints);
+        
+        function clearPoints() {
+            state.splines = [];
+            state.activeSplineIndex = -1;
+            state.lastClickedPoint = null;
+            redrawCanvas();
+            updateButtonStates();
+        }
+
+        elements.canvas.addEventListener('click', handleCanvasClick);
+        
+        function handleCanvasClick(e) {
+            if (!state.drawMode) return;
+            
+            const rect = elements.canvas.getBoundingClientRect();
+            const scaleX = elements.canvas.width / rect.width;
+            const scaleY = elements.canvas.height / rect.height;
+            
+            // Calculate click position on canvas
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            
+            // Snap to line if nearby
+            const snappedPoint = snapToLine(x, y);
+            
+            // Check if clicked on an existing point
+            const existingPoint = findExistingPoint(snappedPoint.x, snappedPoint.y);
+            
+            if (existingPoint) {
+                // Clicked on existing point
+                const { splineIndex, pointIndex, isEndpoint } = existingPoint;
+                
+                if (state.lastClickedPoint) {
+                    // Second click after selecting a point - ignore if clicking same point again
+                    if (state.lastClickedPoint.splineIndex === splineIndex && 
+                        state.lastClickedPoint.pointIndex === pointIndex) {
+                        return;
+                    }
+                    
+                    // Reset last clicked point
+                    state.lastClickedPoint = null;
+                } else {
+                    // First click on an existing point
+                    if (isEndpoint) {
+                        // Clicked on endpoint, prepare to extend this spline
+                        state.activeSplineIndex = splineIndex;
+                        state.lastClickedPoint = { splineIndex, pointIndex, isEndpoint };
+                    } else {
+                        // Clicked on middle point, start new spline from here
+                        state.splines.push([{ 
+                            x: state.splines[splineIndex][pointIndex].x, 
+                            y: state.splines[splineIndex][pointIndex].y 
+                        }]);
+                        state.activeSplineIndex = state.splines.length - 1;
+                        state.lastClickedPoint = null;
+                    }
+                    redrawCanvas();
+                    return;
+                }
+            }
+            
+            // Normal click (not on existing point)
+            if (state.lastClickedPoint) {
+                // Second click after selecting an endpoint
+                const { splineIndex, pointIndex, isEndpoint } = state.lastClickedPoint;
+                
+                // Add to beginning or end of spline
+                if (pointIndex === 0) {
+                    // Add to beginning
+                    state.splines[splineIndex].unshift(snappedPoint);
+                } else {
+                    // Add to end
+                    state.splines[splineIndex].push(snappedPoint);
+                }
+                
+                state.lastClickedPoint = null;
+            } else if (state.activeSplineIndex >= 0 && state.splines[state.activeSplineIndex].length === 1) {
+                // Adding second point to active spline
+                state.splines[state.activeSplineIndex].push(snappedPoint);
+            } else {
+                // Starting a new spline
+                state.splines.push([snappedPoint]);
+                state.activeSplineIndex = state.splines.length - 1;
+            }
+            
+            // Redraw and update buttons
+            redrawCanvas();
+            updateButtonStates();
+        }
+
+        function findExistingPoint(x, y) {
+            const threshold = 10; // Distance threshold for clicking on a point
+            
+            for (let splineIndex = 0; splineIndex < state.splines.length; splineIndex++) {
+                const spline = state.splines[splineIndex];
+                
+                for (let pointIndex = 0; pointIndex < spline.length; pointIndex++) {
+                    const point = spline[pointIndex];
+                    const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
+                    
+                    if (distance <= threshold) {
+                        // Determine if it's an endpoint
+                        const isEndpoint = pointIndex === 0 || pointIndex === spline.length - 1;
+                        return { splineIndex, pointIndex, isEndpoint };
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function snapToLine(x, y) {
+            // Scale coordinates to match line map dimensions
+            const scaleX = 640 / elements.canvas.width;
+            const scaleY = 480 / elements.canvas.height;
+            
+            const mapX = x * scaleX;
+            const mapY = y * scaleY;
+            
+            // Snap threshold
+            const threshold = 15;
+            
+            // Check horizontal lines
+            for (let lineY = 60; lineY < 480; lineY += 80) {
+                if (Math.abs(mapY - lineY) < threshold) {
+                    return { x, y: lineY / scaleY };
+                }
+            }
+            
+            // Check vertical lines
+            for (let lineX = 80; lineX < 640; lineX += 120) {
+                if (Math.abs(mapX - lineX) < threshold) {
+                    return { x: lineX / scaleX, y };
+                }
+            }
+            
+            // Check diagonal from top-left to bottom-right
+            const diag1Dist = Math.abs(mapX - mapY);
+            if (diag1Dist < threshold) {
+                const avg = (mapX + mapY) / 2;
+                return { x: avg / scaleX, y: avg / scaleY };
+            }
+            
+            // Check diagonal from top-right to bottom-left
+            const diag2Dist = Math.abs((640 - mapX) - mapY);
+            if (diag2Dist < threshold) {
+                const avgY = (mapY + (640 - mapX)) / 2;
+                return { x: (640 - avgY) / scaleX, y: avgY / scaleY };
+            }
+            
+            // If no line is nearby, return the original point
+            return { x, y };
+        }
+
+        function redrawCanvas() {
+            // Draw the original full-res image
+            const img = new Image();
+            img.onload = () => {
+                // Clear canvas and draw the image
+                ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+                ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
+                
+                // Draw all splines as straight lines
+                for (const spline of state.splines) {
+                    if (spline.length < 2) continue;
+                    
+                    // Draw straight lines between points
+                    ctx.beginPath();
+                    ctx.moveTo(spline[0].x, spline[0].y);
+                    
+                    for (let i = 1; i < spline.length; i++) {
+                        ctx.lineTo(spline[i].x, spline[i].y);
+                    }
+                    
+                    ctx.strokeStyle = 'yellow';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+                
+                // Draw points
+                for (const spline of state.splines) {
+                    for (const point of spline) {
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                        ctx.fillStyle = 'red';
+                        ctx.fill();
+                    }
+                }
+                
+                // Highlight the last clicked point if any
+                if (state.lastClickedPoint) {
+                    const { splineIndex, pointIndex } = state.lastClickedPoint;
+                    const point = state.splines[splineIndex][pointIndex];
+                    
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#00ffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            };
+            
+            img.src = state.fullResImage;
+        }
+
+        function updateButtonStates() {
+            // Count total points in all splines
+            const totalPoints = state.splines.reduce((sum, spline) => sum + spline.length, 0);
+            
+            // Clear button enabled if we have any points
+            elements.clearBtn.disabled = totalPoints === 0;
+            
+            // Lights button enabled if we have at least one spline with 2+ points
+            const hasCompleteSpline = state.splines.some(spline => spline.length >= 2);
+            elements.lightsBtn.disabled = !hasCompleteSpline;
+        }
+
+        // -----------------------
+        // Christmas Lights
+        // -----------------------
+        elements.lightsBtn.addEventListener('click', applyChristmasLights);
+        
+        function applyChristmasLights() {
+            // Check if we have any valid splines
+            const hasValidSplines = state.splines.some(spline => spline.length >= 2);
+            if (!hasValidSplines) return;
+            
+            // Hide drawing UI, show save button
+            elements.drawBtn.classList.add('hidden');
+            elements.clearBtn.classList.add('hidden');
+            elements.lightsBtn.classList.add('hidden');
+            elements.saveBtn.classList.remove('hidden');
+            
+            // Start animation
+            startLightsAnimation();
+        }
+
+        function startLightsAnimation() {
+            state.animatingLights = true;
+            
+            // Load original image
+            const img = new Image();
+            img.onload = () => {
+                let phase = 0;
+                
+                // List of light colors
+                const colors = [
+                    '#ff0000', // Red
+                    '#00ff00', // Green
+                    '#0000ff', // Blue
+                    '#ffff00', // Yellow
+                    '#ff00ff'  // Magenta
+                ];
+                
+                // Animation function
+                const animate = () => {
+                    if (!state.animatingLights) return;
+                    
+                    // Draw background image
+                    ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
+                    
+                    // Draw lights for each spline
+                    for (const spline of state.splines) {
+                        if (spline.length < 2) continue;
+                        
+                        // Calculate points along the spline
+                        const lightPoints = calculateLightPoints(spline);
+                        
+                        // Draw each light with depth-based scaling
+                        lightPoints.forEach((point, i) => {
+                            // Get depth value to determine light size
+                            const depth = getDepthAtPoint(point.x, point.y);
+                            const size = 3 + (depth * 7); // Size between 3-10px
+                            
+                            // Color based on position and animation phase
+                            const colorIndex = (i + Math.floor(phase)) % colors.length;
+                            
+                            // Draw light
+                            ctx.beginPath();
+                            ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+                            ctx.fillStyle = colors[colorIndex];
+                            ctx.fill();
+                            
+                            // Add glow effect
+                            const gradient = ctx.createRadialGradient(
+                                point.x, point.y, 0,
+                                point.x, point.y, size * 2
+                            );
+                            gradient.addColorStop(0, colors[colorIndex]);
+                            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                            
+                            ctx.beginPath();
+                            ctx.arc(point.x, point.y, size * 2, 0, Math.PI * 2);
+                            ctx.fillStyle = gradient;
+                            ctx.fill();
+                        });
+                    }
+                    
+                    // Increment phase for animation
+                    phase += 0.1;
+                    
+                    // Continue animation
+                    state.animationId = requestAnimationFrame(animate);
+                };
+                
+                // Start animation loop
+                animate();
+            };
+            
+            img.src = state.fullResImage;
+        }
+
+        function stopLightsAnimation() {
+            state.animatingLights = false;
+            
+            if (state.animationId) {
+                cancelAnimationFrame(state.animationId);
+                state.animationId = null;
+            }
+        }
+
+        function calculateLightPoints(spline) {
+            // Calculate evenly spaced points along a spline for lights
+            if (spline.length < 2) return [];
+            
+            const points = [];
+            const totalLights = 50; // Total number of lights to place
+            
+            // Calculate total spline length
+            let totalLength = 0;
+            for (let i = 0; i < spline.length - 1; i++) {
+                const dx = spline[i + 1].x - spline[i].x;
+                const dy = spline[i + 1].y - spline[i].y;
+                totalLength += Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            // Place lights evenly based on segment length
+            let placedLights = 0;
+            
+            for (let i = 0; i < spline.length - 1; i++) {
+                const start = spline[i];
+                const end = spline[i + 1];
+                
+                // Calculate distance of this segment
+                const dx = end.x - start.x;
+                const dy = end.y - start.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Allocate lights proportionally to segment length
+                const segmentLights = Math.round(totalLights * (distance / totalLength));
+                
+                // Add lights for this segment
+                for (let j = 0; j <= segmentLights; j++) {
+                    if (placedLights >= totalLights) break;
+                    
+                    const t = j / segmentLights;
+                    points.push({
+                        x: start.x + dx * t,
+                        y: start.y + dy * t
+                    });
+                    
+                    placedLights++;
+                }
+            }
+            
+            return points;
+        }
+
+        function getDepthAtPoint(x, y) {
+            // Convert canvas coordinates to depth map coordinates
+            const depthX = Math.floor((x / elements.canvas.width) * 640);
+            const depthY = Math.floor((y / elements.canvas.height) * 480);
+            
+            // In a real implementation, this would sample the actual depth map
+            // For this demo, simulate depth based on Y position (higher = further)
+            return depthY / 480;
+        }
+
+        // -----------------------
+        // Save & Enhance
+        // -----------------------
+        elements.saveBtn.addEventListener('click', saveAndEnhance);
+        
+        function saveAndEnhance() {
+            // Stop animation
+            stopLightsAnimation();
+            
+            // Show processing overlay
+            elements.processingOverlay.classList.remove('hidden');
+            state.processing = true;
+            
+            // Get current canvas image (this has the lights on it)
+            const canvasWithLights = elements.canvas.toDataURL('image/jpeg', 0.9);
+            
+            // Combine with low-res image for sending to server (in a real app)
+            // For this demo, we'll just use the canvas image for enhancement
+            setTimeout(() => {
+                enhanceImage(canvasWithLights);
+            }, 2000);
+        }
+
+        function enhanceImage(imageData) {
+            const img = new Image();
+            img.onload = () => {
+                // Create a new canvas for the enhanced image
+                const enhanceCanvas = document.createElement('canvas');
+                enhanceCanvas.width = img.width;
+                enhanceCanvas.height = img.height;
+                
+                const enhanceCtx = enhanceCanvas.getContext('2d');
+                
+                // Draw original image
+                enhanceCtx.drawImage(img, 0, 0);
+                
+                // Apply effects to simulate AI enhancement
+                enhanceCtx.filter = 'contrast(110%) brightness(110%) saturate(120%)';
+                enhanceCtx.globalCompositeOperation = 'source-atop';
+                enhanceCtx.drawImage(img, 0, 0);
+                
+                // Reset filters
+                enhanceCtx.filter = 'none';
+                enhanceCtx.globalCompositeOperation = 'source-over';
+                
+                // Add subtle vignette
+                const gradient = enhanceCtx.createRadialGradient(
+                    enhanceCanvas.width / 2, enhanceCanvas.height / 2, enhanceCanvas.height * 0.3,
+                    enhanceCanvas.width / 2, enhanceCanvas.height / 2, enhanceCanvas.height * 0.8
+                );
+                gradient.addColorStop(0, 'rgba(0,0,0,0)');
+                gradient.addColorStop(1, 'rgba(0,0,0,0.3)');
+                
+                enhanceCtx.fillStyle = gradient;
+                enhanceCtx.fillRect(0, 0, enhanceCanvas.width, enhanceCanvas.height);
+                
+                // Save the enhanced image
+                state.enhancedImage = enhanceCanvas.toDataURL('image/jpeg', 0.9);
+                
+                // Update UI
+                elements.enhancedImage.src = state.enhancedImage;
+                elements.resultsContainer.classList.remove('hidden');
+                elements.saveBtn.classList.add('hidden');
+                elements.downloadBtn.classList.remove('hidden');
+                elements.mapsContainer.classList.add('hidden');
+                
+                // Hide processing overlay
+                elements.processingOverlay.classList.add('hidden');
+                state.processing = false;
+            };
+            
+            img.src = imageData;
+        }
+
+        elements.downloadBtn.addEventListener('click', downloadImage);
+        
+        function downloadImage() {
+            if (!state.enhancedImage) return;
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = state.enhancedImage;
+            link.download = 'christmas-lights-photo.jpg';
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // -----------------------
+        // Reset
+        // -----------------------
+        elements.resetBtn.addEventListener('click', resetApp);
+        
+        function resetApp() {
+            // Stop animations if running
+            stopLightsAnimation();
+            
+            // Reset state
+            state.splines = [];
+            state.activeSplineIndex = -1;
+            state.lastClickedPoint = null;
+            state.fullResImage = null;
+            state.lowResImage = null;
+            state.depthMap = null;
+            state.lineMap = null;
+            state.drawMode = false;
+            state.animatingLights = false;
+            state.enhancedImage = null;
+            
+            // Reset UI based on current mode
+            if (state.mode === 'camera') {
+                elements.cameraView.classList.remove('hidden');
+                elements.fileView.classList.add('hidden');
+                elements.editorView.classList.add('hidden');
+                
+                elements.video.classList.add('hidden');
+                elements.cameraPlaceholder.classList.remove('hidden');
+                elements.takePictureBtn.classList.add('hidden');
+                elements.startCameraBtn.classList.remove('hidden');
+            } else {
+                elements.fileView.classList.remove('hidden');
+                elements.cameraView.classList.add('hidden');
+                elements.editorView.classList.add('hidden');
+                
+                elements.previewImage.classList.add('hidden');
+                elements.fileUploadPlaceholder.classList.remove('hidden');
+                elements.useImageBtn.classList.add('hidden');
+                elements.fileInput.value = ''; // Reset file input
+            }
+            
+            // Reset editor UI
+            elements.drawBtn.textContent = 'Draw Light Path';
+            elements.drawBtn.classList.remove('hidden');
+            elements.clearBtn.classList.remove('hidden');
+            elements.lightsBtn.classList.remove('hidden');
+            elements.saveBtn.classList.add('hidden');
+            elements.downloadBtn.classList.add('hidden');
+            elements.canvas.classList.remove('crosshair');
+            elements.instructions.textContent = '';
+            elements.mapsContainer.classList.add('hidden');
+            elements.resultsContainer.classList.add('hidden');
+            
+            // Reset button states
+            elements.clearBtn.disabled = true;
+            elements.lightsBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
