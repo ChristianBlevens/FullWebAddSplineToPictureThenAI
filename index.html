@@ -288,7 +288,7 @@
         <!-- Editor View -->
         <div id="editorView" class="hidden">
             <div class="input-container">
-                <canvas id="canvas"></canvas>
+                <canvas id="canvas" class="crosshair"></canvas>
                 <div id="processingOverlay" class="processing-overlay hidden">
                     <p>Processing image...</p>
                     <div class="progress">
@@ -297,15 +297,14 @@
                 </div>
             </div>
             
-            <div id="instructions" class="instructions"></div>
+            <div id="instructions" class="instructions">Click to add points for your Christmas lights</div>
             
             <div id="editorButtons" class="button-container">
-                <button id="drawBtn" class="button button-purple">Draw Light Path</button>
-                <button id="clearBtn" class="button button-red" disabled>Clear Points</button>
-                <button id="lightsBtn" class="button button-green" disabled>Apply Christmas Lights</button>
-                <button id="saveBtn" class="button button-blue hidden">Save and Enhance</button>
-                <button id="downloadBtn" class="button button-green hidden">Download Image</button>
+                <button id="undoBtn" class="button button-purple" disabled>Undo</button>
+                <button id="clearBtn" class="button button-red" disabled>Clear All</button>
+                <button id="enhanceBtn" class="button button-green" disabled>Enhance Image</button>
                 <button id="resetBtn" class="button button-gray">Start Over</button>
+                <button id="downloadBtn" class="button button-blue hidden">Download Image</button>
             </div>
             
             <!-- Maps Container -->
@@ -341,12 +340,12 @@
             lowResImage: null, // Resized image for processing
             depthMap: null,
             lineMap: null,
-            drawMode: false,
-            animatingLights: false,
+            animatingLights: true, // Always animating lights
             animationId: null,
             processing: false,
             enhancedImage: null,
-            lastClickedPoint: null // Used for tracking if we clicked on existing point
+            lastClickedPoint: null, // Used for tracking if we clicked on existing point
+            inEnhanceMode: false // Flag to control UI state after enhance button is pressed
         };
 
         // DOM Elements
@@ -387,10 +386,9 @@
             enhancedImage: document.getElementById('enhancedImage'),
             
             // Buttons
-            drawBtn: document.getElementById('drawBtn'),
+            undoBtn: document.getElementById('undoBtn'),
             clearBtn: document.getElementById('clearBtn'),
-            lightsBtn: document.getElementById('lightsBtn'),
-            saveBtn: document.getElementById('saveBtn'),
+            enhanceBtn: document.getElementById('enhanceBtn'),
             downloadBtn: document.getElementById('downloadBtn'),
             resetBtn: document.getElementById('resetBtn')
         };
@@ -553,6 +551,9 @@
                     // Hide processing overlay
                     elements.processingOverlay.classList.add('hidden');
                     state.processing = false;
+                    
+                    // Start in drawing mode automatically
+                    startLightsAnimation();
                 }, 1500);
             };
             
@@ -676,36 +677,11 @@
         // -----------------------
         // Drawing Functions
         // -----------------------
-        elements.drawBtn.addEventListener('click', toggleDrawingMode);
-        
-        function toggleDrawingMode() {
-            state.drawMode = !state.drawMode;
-            
-            if (state.drawMode) {
-                elements.drawBtn.textContent = 'Done Drawing';
-                elements.canvas.classList.add('crosshair');
-                elements.instructions.textContent = 'Click to add points for your Christmas lights';
-            } else {
-                elements.drawBtn.textContent = 'Draw Light Path';
-                elements.canvas.classList.remove('crosshair');
-                elements.instructions.textContent = '';
-            }
-        }
-
-        elements.clearBtn.addEventListener('click', clearPoints);
-        
-        function clearPoints() {
-            state.splines = [];
-            state.activeSplineIndex = -1;
-            state.lastClickedPoint = null;
-            redrawCanvas();
-            updateButtonStates();
-        }
-
         elements.canvas.addEventListener('click', handleCanvasClick);
         
         function handleCanvasClick(e) {
-            if (!state.drawMode) return;
+            // If in enhance mode, don't allow further drawing
+            if (state.inEnhanceMode) return;
             
             const rect = elements.canvas.getBoundingClientRect();
             const scaleX = elements.canvas.width / rect.width;
@@ -848,54 +824,65 @@
         }
 
         function redrawCanvas() {
-            // Draw the original full-res image
-            const img = new Image();
-            img.onload = () => {
-                // Clear canvas and draw the image
-                ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
-                ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
-                
-                // Draw all splines as straight lines
-                for (const spline of state.splines) {
-                    if (spline.length < 2) continue;
+            // Always re-render with lights if we have splines
+            if (state.splines.some(spline => spline.length >= 2)) {
+                // Just trigger a re-render of the animation loop,
+                // which will handle showing the lights
+                // The animation is always running when in editor mode
+            } else {
+                // Draw the original image without lights (no valid splines yet)
+                const img = new Image();
+                img.onload = () => {
+                    // Clear canvas and draw the image
+                    ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+                    ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
                     
-                    // Draw straight lines between points
-                    ctx.beginPath();
-                    ctx.moveTo(spline[0].x, spline[0].y);
-                    
-                    for (let i = 1; i < spline.length; i++) {
-                        ctx.lineTo(spline[i].x, spline[i].y);
+                    // Draw all splines as straight lines
+                    for (const spline of state.splines) {
+                        if (spline.length < 2) {
+                            // For single points, just draw the point
+                            ctx.beginPath();
+                            ctx.arc(spline[0].x, spline[0].y, 5, 0, Math.PI * 2);
+                            ctx.fillStyle = 'red';
+                            ctx.fill();
+                        } else {
+                            // Draw straight lines between points
+                            ctx.beginPath();
+                            ctx.moveTo(spline[0].x, spline[0].y);
+                            
+                            for (let i = 1; i < spline.length; i++) {
+                                ctx.lineTo(spline[i].x, spline[i].y);
+                            }
+                            
+                            ctx.strokeStyle = 'yellow';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                            
+                            // Draw points
+                            for (const point of spline) {
+                                ctx.beginPath();
+                                ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                                ctx.fillStyle = 'red';
+                                ctx.fill();
+                            }
+                        }
                     }
                     
-                    ctx.strokeStyle = 'yellow';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
-                
-                // Draw points
-                for (const spline of state.splines) {
-                    for (const point of spline) {
+                    // Highlight the last clicked point if any
+                    if (state.lastClickedPoint) {
+                        const { splineIndex, pointIndex } = state.lastClickedPoint;
+                        const point = state.splines[splineIndex][pointIndex];
+                        
                         ctx.beginPath();
-                        ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-                        ctx.fillStyle = 'red';
-                        ctx.fill();
+                        ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#00ffff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
                     }
-                }
+                };
                 
-                // Highlight the last clicked point if any
-                if (state.lastClickedPoint) {
-                    const { splineIndex, pointIndex } = state.lastClickedPoint;
-                    const point = state.splines[splineIndex][pointIndex];
-                    
-                    ctx.beginPath();
-                    ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
-                    ctx.strokeStyle = '#00ffff';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
-            };
-            
-            img.src = state.fullResImage;
+                img.src = state.fullResImage;
+            }
         }
 
         function updateButtonStates() {
@@ -905,31 +892,78 @@
             // Clear button enabled if we have any points
             elements.clearBtn.disabled = totalPoints === 0;
             
-            // Lights button enabled if we have at least one spline with 2+ points
+            // Undo button enabled if we have any points
+            elements.undoBtn.disabled = totalPoints === 0;
+            
+            // Enhance button enabled if we have at least one spline with 2+ points
             const hasCompleteSpline = state.splines.some(spline => spline.length >= 2);
-            elements.lightsBtn.disabled = !hasCompleteSpline;
+            elements.enhanceBtn.disabled = !hasCompleteSpline;
+        }
+
+        // -----------------------
+        // Undo Function
+        // -----------------------
+        elements.undoBtn.addEventListener('click', undoLastAction);
+        
+        function undoLastAction() {
+            if (state.splines.length === 0) return;
+            
+            // If we have a last clicked point, clear it
+            if (state.lastClickedPoint) {
+                state.lastClickedPoint = null;
+                redrawCanvas();
+                return;
+            }
+            
+            // If we have an active spline with only one point, remove it entirely
+            if (state.activeSplineIndex >= 0 && 
+                state.splines[state.activeSplineIndex].length === 1) {
+                state.splines.splice(state.activeSplineIndex, 1);
+                state.activeSplineIndex = state.splines.length - 1;
+            } 
+            // If we have an active spline with multiple points, remove the last point
+            else if (state.activeSplineIndex >= 0 && 
+                    state.splines[state.activeSplineIndex].length > 1) {
+                state.splines[state.activeSplineIndex].pop();
+                
+                // If we've removed all but one point, keep the active index
+                if (state.splines[state.activeSplineIndex].length === 0) {
+                    state.splines.splice(state.activeSplineIndex, 1);
+                    state.activeSplineIndex = state.splines.length - 1;
+                }
+            } 
+            // Otherwise remove the last point from the last spline
+            else if (state.splines.length > 0) {
+                const lastSplineIndex = state.splines.length - 1;
+                
+                if (state.splines[lastSplineIndex].length > 1) {
+                    state.splines[lastSplineIndex].pop();
+                } else {
+                    state.splines.pop();
+                    state.activeSplineIndex = state.splines.length - 1;
+                }
+            }
+            
+            redrawCanvas();
+            updateButtonStates();
+        }
+
+        // -----------------------
+        // Clear Function
+        // -----------------------
+        elements.clearBtn.addEventListener('click', clearPoints);
+        
+        function clearPoints() {
+            state.splines = [];
+            state.activeSplineIndex = -1;
+            state.lastClickedPoint = null;
+            redrawCanvas();
+            updateButtonStates();
         }
 
         // -----------------------
         // Christmas Lights
         // -----------------------
-        elements.lightsBtn.addEventListener('click', applyChristmasLights);
-        
-        function applyChristmasLights() {
-            // Check if we have any valid splines
-            const hasValidSplines = state.splines.some(spline => spline.length >= 2);
-            if (!hasValidSplines) return;
-            
-            // Hide drawing UI, show save button
-            elements.drawBtn.classList.add('hidden');
-            elements.clearBtn.classList.add('hidden');
-            elements.lightsBtn.classList.add('hidden');
-            elements.saveBtn.classList.remove('hidden');
-            
-            // Start animation
-            startLightsAnimation();
-        }
-
         function startLightsAnimation() {
             state.animatingLights = true;
             
@@ -954,23 +988,48 @@
                     // Draw background image
                     ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
                     
+                    // Draw all splines with points for editing
+                    for (const spline of state.splines) {
+                        // Draw straight lines between points
+                        if (spline.length >= 2) {
+                            ctx.beginPath();
+                            ctx.moveTo(spline[0].x, spline[0].y);
+                            
+                            for (let i = 1; i < spline.length; i++) {
+                                ctx.lineTo(spline[i].x, spline[i].y);
+                            }
+                            
+                            ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                    
                     // Draw lights for each spline
                     for (const spline of state.splines) {
-                        if (spline.length < 2) continue;
+                        if (spline.length < 2) {
+                            // For splines with only one point, just draw the point
+                            if (spline.length === 1) {
+                                ctx.beginPath();
+                                ctx.arc(spline[0].x, spline[0].y, 5, 0, Math.PI * 2);
+                                ctx.fillStyle = 'red';
+                                ctx.fill();
+                            }
+                            continue;
+                        }
                         
-                        // Calculate points along the spline
-                        const lightPoints = calculateLightPoints(spline);
+                        // Calculate evenly spaced points along the spline, adjusted for depth
+                        const lightPoints = calculateDepthAdjustedLightPoints(spline);
                         
-                        // Draw each light with depth-based scaling
+                        // Draw each light
                         lightPoints.forEach((point, i) => {
-                            // Get depth value to determine light size
-                            const depth = getDepthAtPoint(point.x, point.y);
-                            const size = 3 + (depth * 7); // Size between 3-10px
-                            
                             // Color based on position and animation phase
                             const colorIndex = (i + Math.floor(phase)) % colors.length;
                             
-                            // Draw light
+                            // Draw light with depth-based size
+                            const depth = getDepthAtPoint(point.x, point.y);
+                            const size = 3 + (depth * 7); // Size between 3-10px
+                            
                             ctx.beginPath();
                             ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
                             ctx.fillStyle = colors[colorIndex];
@@ -989,6 +1048,32 @@
                             ctx.fillStyle = gradient;
                             ctx.fill();
                         });
+                    }
+                    
+                    // Draw control points on top of lights
+                    for (const spline of state.splines) {
+                        // Draw points
+                        for (const point of spline) {
+                            ctx.beginPath();
+                            ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                            ctx.fillStyle = 'red';
+                            ctx.fill();
+                            ctx.strokeStyle = 'white';
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                    
+                    // Highlight the last clicked point if any
+                    if (state.lastClickedPoint) {
+                        const { splineIndex, pointIndex } = state.lastClickedPoint;
+                        const point = state.splines[splineIndex][pointIndex];
+                        
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#00ffff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
                     }
                     
                     // Increment phase for animation
@@ -1014,12 +1099,13 @@
             }
         }
 
-        function calculateLightPoints(spline) {
-            // Calculate evenly spaced points along a spline for lights
+        function calculateDepthAdjustedLightPoints(spline) {
+            // Calculate evenly spaced points along a spline for lights,
+            // with spacing adjusted based on depth
             if (spline.length < 2) return [];
             
             const points = [];
-            const totalLights = 50; // Total number of lights to place
+            const totalLights = 50; // Base number of lights to place
             
             // Calculate total spline length
             let totalLength = 0;
@@ -1029,9 +1115,8 @@
                 totalLength += Math.sqrt(dx * dx + dy * dy);
             }
             
-            // Place lights evenly based on segment length
-            let placedLights = 0;
-            
+            // For each segment of the spline
+            let currentLength = 0;
             for (let i = 0; i < spline.length - 1; i++) {
                 const start = spline[i];
                 const end = spline[i + 1];
@@ -1039,22 +1124,31 @@
                 // Calculate distance of this segment
                 const dx = end.x - start.x;
                 const dy = end.y - start.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                const segmentLength = Math.sqrt(dx * dx + dy * dy);
                 
-                // Allocate lights proportionally to segment length
-                const segmentLights = Math.round(totalLights * (distance / totalLength));
+                // Get depth at start and end points
+                const startDepth = getDepthAtPoint(start.x, start.y);
+                const endDepth = getDepthAtPoint(end.x, end.y);
                 
-                // Add lights for this segment
-                for (let j = 0; j <= segmentLights; j++) {
-                    if (placedLights >= totalLights) break;
+                // Number of lights for this segment, proportional to length
+                // and adjusted for depth (more lights in deeper areas to compensate for smaller size)
+                const avgDepth = (startDepth + endDepth) / 2;
+                const depthAdjustment = 1 + (1 - avgDepth); // More lights in deeper (smaller) areas
+                
+                const segmentLightCount = Math.max(2, Math.round(
+                    (segmentLength / totalLength) * totalLights * depthAdjustment
+                ));
+                
+                // Place lights along this segment with depth-adjusted spacing
+                for (let j = 0; j < segmentLightCount; j++) {
+                    const t = j / (segmentLightCount - 1);
                     
-                    const t = j / segmentLights;
-                    points.push({
-                        x: start.x + dx * t,
-                        y: start.y + dy * t
-                    });
+                    // Get position along the segment
+                    const x = start.x + dx * t;
+                    const y = start.y + dy * t;
                     
-                    placedLights++;
+                    // Add light point
+                    points.push({ x, y });
                 }
             }
             
@@ -1072,29 +1166,37 @@
         }
 
         // -----------------------
-        // Save & Enhance
+        // Enhance Image
         // -----------------------
-        elements.saveBtn.addEventListener('click', saveAndEnhance);
+        elements.enhanceBtn.addEventListener('click', enhanceImage);
         
-        function saveAndEnhance() {
-            // Stop animation
-            stopLightsAnimation();
+        function enhanceImage() {
+            // Set enhance mode to disable further drawing
+            state.inEnhanceMode = true;
             
             // Show processing overlay
             elements.processingOverlay.classList.remove('hidden');
             state.processing = true;
             
-            // Get current canvas image (this has the lights on it)
-            const canvasWithLights = elements.canvas.toDataURL('image/jpeg', 0.9);
+            // Adjust UI for enhance mode
+            elements.undoBtn.classList.add('hidden');
+            elements.clearBtn.classList.add('hidden');
+            elements.enhanceBtn.classList.add('hidden');
+            elements.downloadBtn.classList.remove('hidden');
             
-            // Combine with low-res image for sending to server (in a real app)
-            // For this demo, we'll just use the canvas image for enhancement
+            // Remove crosshair cursor
+            elements.canvas.classList.remove('crosshair');
+            
+            // Show processing for a short time
             setTimeout(() => {
-                enhanceImage(canvasWithLights);
+                applyEnhancements();
             }, 2000);
         }
 
-        function enhanceImage(imageData) {
+        function applyEnhancements() {
+            // Get current canvas image (this has the lights on it)
+            const canvasWithLights = elements.canvas.toDataURL('image/jpeg', 0.9);
+            
             const img = new Image();
             img.onload = () => {
                 // Create a new canvas for the enhanced image
@@ -1133,32 +1235,46 @@
                 // Update UI
                 elements.enhancedImage.src = state.enhancedImage;
                 elements.resultsContainer.classList.remove('hidden');
-                elements.saveBtn.classList.add('hidden');
-                elements.downloadBtn.classList.remove('hidden');
                 elements.mapsContainer.classList.add('hidden');
+                
+                // Update instructions
+                elements.instructions.textContent = 'Your enhanced image is ready!';
                 
                 // Hide processing overlay
                 elements.processingOverlay.classList.add('hidden');
                 state.processing = false;
             };
             
-            img.src = imageData;
+            img.src = canvasWithLights;
         }
 
+        // -----------------------
+        // Download Image
+        // -----------------------
         elements.downloadBtn.addEventListener('click', downloadImage);
         
         function downloadImage() {
-            if (!state.enhancedImage) return;
-            
-            // Create download link
-            const link = document.createElement('a');
-            link.href = state.enhancedImage;
-            link.download = 'christmas-lights-photo.jpg';
-            
-            // Trigger download
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (state.inEnhanceMode && state.enhancedImage) {
+                // Download enhanced image
+                const link = document.createElement('a');
+                link.href = state.enhancedImage;
+                link.download = 'christmas-lights-photo.jpg';
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // Download current canvas image with lights
+                const link = document.createElement('a');
+                link.href = elements.canvas.toDataURL('image/jpeg', 0.9);
+                link.download = 'christmas-lights-photo.jpg';
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         }
 
         // -----------------------
@@ -1178,9 +1294,8 @@
             state.lowResImage = null;
             state.depthMap = null;
             state.lineMap = null;
-            state.drawMode = false;
-            state.animatingLights = false;
             state.enhancedImage = null;
+            state.inEnhanceMode = false;
             
             // Reset UI based on current mode
             if (state.mode === 'camera') {
@@ -1204,20 +1319,19 @@
             }
             
             // Reset editor UI
-            elements.drawBtn.textContent = 'Draw Light Path';
-            elements.drawBtn.classList.remove('hidden');
+            elements.undoBtn.classList.remove('hidden');
             elements.clearBtn.classList.remove('hidden');
-            elements.lightsBtn.classList.remove('hidden');
-            elements.saveBtn.classList.add('hidden');
+            elements.enhanceBtn.classList.remove('hidden');
             elements.downloadBtn.classList.add('hidden');
-            elements.canvas.classList.remove('crosshair');
-            elements.instructions.textContent = '';
+            elements.canvas.classList.add('crosshair');
+            elements.instructions.textContent = 'Click to add points for your Christmas lights';
             elements.mapsContainer.classList.add('hidden');
             elements.resultsContainer.classList.add('hidden');
             
             // Reset button states
+            elements.undoBtn.disabled = true;
             elements.clearBtn.disabled = true;
-            elements.lightsBtn.disabled = true;
+            elements.enhanceBtn.disabled = true;
         }
     </script>
 </body>
