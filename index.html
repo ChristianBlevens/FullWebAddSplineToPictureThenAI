@@ -1107,11 +1107,11 @@
 
         function calculateDepthAdjustedLightPoints(spline) {
             // Calculate points along a spline for lights using a depth accumulation method
-            if (spline.length < 2) return [];
+            if (spline.length < 1) return [];
             
             const points = [];
             const THRESHOLD = 10; // Base threshold for placing a light
-            const STEP_SIZE = 2; // Step size in pixels for traversing the spline
+            const STEP_SIZE = 1; // Step size in pixels for traversing the spline
             
             // Process each segment of the spline
             for (let i = 0; i < spline.length - 1; i++) {
