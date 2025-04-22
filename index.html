@@ -988,28 +988,32 @@
                     // Draw background image
                     ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
                     
-                    // Draw all splines with points for editing
-                    for (const spline of state.splines) {
-                        // Draw straight lines between points
-                        if (spline.length >= 2) {
-                            ctx.beginPath();
-                            ctx.moveTo(spline[0].x, spline[0].y);
-                            
-                            for (let i = 1; i < spline.length; i++) {
-                                ctx.lineTo(spline[i].x, spline[i].y);
+                    // Only draw splines if we're not in enhance mode
+                    // This is for the editing view only, not for the final image
+                    if (!state.inEnhanceMode) {
+                        // Draw all splines with points for editing
+                        for (const spline of state.splines) {
+                            // Draw straight lines between points
+                            if (spline.length >= 2) {
+                                ctx.beginPath();
+                                ctx.moveTo(spline[0].x, spline[0].y);
+                                
+                                for (let i = 1; i < spline.length; i++) {
+                                    ctx.lineTo(spline[i].x, spline[i].y);
+                                }
+                                
+                                ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                                ctx.lineWidth = 1;
+                                ctx.stroke();
                             }
-                            
-                            ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
-                            ctx.lineWidth = 1;
-                            ctx.stroke();
                         }
                     }
                     
                     // Draw lights for each spline
                     for (const spline of state.splines) {
                         if (spline.length < 2) {
-                            // For splines with only one point, just draw the point
-                            if (spline.length === 1) {
+                            // For splines with only one point, just draw the point if not in enhance mode
+                            if (spline.length === 1 && !state.inEnhanceMode) {
                                 ctx.beginPath();
                                 ctx.arc(spline[0].x, spline[0].y, 5, 0, Math.PI * 2);
                                 ctx.fillStyle = 'red';
@@ -1050,30 +1054,32 @@
                         });
                     }
                     
-                    // Draw control points on top of lights
-                    for (const spline of state.splines) {
-                        // Draw points
-                        for (const point of spline) {
+                    // Draw control points on top of lights only if not in enhance mode
+                    if (!state.inEnhanceMode) {
+                        for (const spline of state.splines) {
+                            // Draw points
+                            for (const point of spline) {
+                                ctx.beginPath();
+                                ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                                ctx.fillStyle = 'red';
+                                ctx.fill();
+                                ctx.strokeStyle = 'white';
+                                ctx.lineWidth = 1;
+                                ctx.stroke();
+                            }
+                        }
+                        
+                        // Highlight the last clicked point if any
+                        if (state.lastClickedPoint) {
+                            const { splineIndex, pointIndex } = state.lastClickedPoint;
+                            const point = state.splines[splineIndex][pointIndex];
+                            
                             ctx.beginPath();
-                            ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-                            ctx.fillStyle = 'red';
-                            ctx.fill();
-                            ctx.strokeStyle = 'white';
-                            ctx.lineWidth = 1;
+                            ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+                            ctx.strokeStyle = '#00ffff';
+                            ctx.lineWidth = 2;
                             ctx.stroke();
                         }
-                    }
-                    
-                    // Highlight the last clicked point if any
-                    if (state.lastClickedPoint) {
-                        const { splineIndex, pointIndex } = state.lastClickedPoint;
-                        const point = state.splines[splineIndex][pointIndex];
-                        
-                        ctx.beginPath();
-                        ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
-                        ctx.strokeStyle = '#00ffff';
-                        ctx.lineWidth = 2;
-                        ctx.stroke();
                     }
                     
                     // Increment phase for animation
@@ -1124,7 +1130,7 @@
                 const steps = Math.ceil(segmentLength / STEP_SIZE);
                 
                 // Initialize depth accumulator
-                let depthAccumulator = 0;
+                let depthAccumulator = THRESHOLD - STEP_SIZE;
                 
                 // Track where the last light was placed to avoid double lights at junctions
                 let lastLightPosition = -1;
@@ -1225,6 +1231,9 @@
             
             // Show processing for a short time
             setTimeout(() => {
+                // Capture a frame with just the image and lights, no splines or control points
+                // We do this by temporarily rendering a frame with inEnhanceMode true,
+                // which will exclude the splines and control points
                 applyEnhancements();
             }, 2000);
         }
