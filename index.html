@@ -44,6 +44,126 @@
             color: #2b6cb0;
         }
         
+        .editor-container {
+            display: flex;
+            align-items: stretch;
+            margin-bottom: 20px;
+        }
+        
+        .control-sidebar {
+            width: 60px;
+            margin-right: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        
+        .density-slider-container {
+            height: 200px;
+            width: 40px;
+            background-color: #e2e8f0;
+            border-radius: 8px;
+            position: relative;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+        }
+        
+        .density-slider {
+            width: 100%;
+            height: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            outline: none;
+            writing-mode: bt-lr; /* Orient vertically */
+            -webkit-appearance: slider-vertical;
+            transform: rotate(180deg);
+        }
+        
+        .density-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .density-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .density-label {
+            font-size: 10px;
+            margin-top: 5px;
+            color: #4a5568;
+            text-align: center;
+        }
+        
+        .slider-tick {
+            position: absolute;
+            width: 100%;
+            left: 0;
+            height: 1px;
+            background-color: #a0aec0;
+        }
+        
+        .slider-tick.min {
+            bottom: 10px;
+        }
+        
+        .slider-tick.mid {
+            bottom: 50%;
+        }
+        
+        .slider-tick.max {
+            top: 10px;
+        }
+        
+        .slider-value {
+            position: absolute;
+            right: -25px;
+            font-size: 10px;
+            color: #4a5568;
+        }
+        
+        .color-bar-container {
+            height: 200px;
+            width: 40px;
+            background: linear-gradient(
+                to bottom,
+                #ff0000,
+                #00ff00,
+                #0000ff,
+                #ffff00,
+                #ff00ff
+            );
+            border-radius: 8px;
+            position: relative;
+            overflow: visible;
+        }
+        
+        .color-marker {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+            right: -10px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
         .input-container {
             display: flex;
             flex-direction: column;
@@ -51,9 +171,9 @@
             background-color: #1a202c;
             border-radius: 8px;
             overflow: hidden;
-            margin-bottom: 20px;
             position: relative;
             aspect-ratio: 16/9;
+            flex-grow: 1;
         }
         
         .input-placeholder {
@@ -230,6 +350,49 @@
             animation: progress-animation 1.5s infinite ease-in-out;
         }
         
+        .color-picker-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .color-picker-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+            width: 100%;
+        }
+        
+        .color-picker-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #4a5568;
+        }
+        
+        .color-picker-input {
+            width: 100%;
+            height: 40px;
+            margin-bottom: 15px;
+            border: none;
+            outline: none;
+        }
+        
+        .color-picker-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
         @keyframes progress-animation {
             0% { width: 0%; }
             50% { width: 70%; }
@@ -287,12 +450,32 @@
         
         <!-- Editor View -->
         <div id="editorView" class="hidden">
-            <div class="input-container">
-                <canvas id="canvas" class="crosshair"></canvas>
-                <div id="processingOverlay" class="processing-overlay hidden">
-                    <p>Processing image...</p>
-                    <div class="progress">
-                        <div class="progress-bar"></div>
+            <div class="editor-container">
+                <!-- Sidebar with controls -->
+                <div class="control-sidebar">
+                    <!-- Density Slider -->
+                    <div class="density-slider-container">
+                        <input type="range" min="0.5" max="2" step="0.01" value="1" class="density-slider" id="densitySlider">
+                        <div class="slider-tick max"><span class="slider-value">2.0</span></div>
+                        <div class="slider-tick mid"><span class="slider-value">1.0</span></div>
+                        <div class="slider-tick min"><span class="slider-value">0.5</span></div>
+                        <div class="density-label">Density</div>
+                    </div>
+                    
+                    <!-- Color Bar -->
+                    <div class="color-bar-container" id="colorBar">
+                        <!-- Color markers will be added dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Main Canvas Container -->
+                <div class="input-container">
+                    <canvas id="canvas" class="crosshair"></canvas>
+                    <div id="processingOverlay" class="processing-overlay hidden">
+                        <p>Processing image...</p>
+                        <div class="progress">
+                            <div class="progress-bar"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -327,6 +510,18 @@
                 <div class="instructions">AI Enhanced Image</div>
             </div>
         </div>
+        
+        <!-- Color Picker Overlay -->
+        <div id="colorPickerOverlay" class="color-picker-overlay hidden">
+            <div class="color-picker-container">
+                <div class="color-picker-title">Choose Light Color</div>
+                <input type="color" id="colorPickerInput" class="color-picker-input" value="#ff0000">
+                <div class="color-picker-buttons">
+                    <button id="cancelColorBtn" class="button button-gray">Cancel</button>
+                    <button id="selectColorBtn" class="button button-blue">Select</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -345,7 +540,11 @@
             processing: false,
             enhancedImage: null,
             lastClickedPoint: null, // Used for tracking if we clicked on existing point
-            inEnhanceMode: false // Flag to control UI state after enhance button is pressed
+            inEnhanceMode: false, // Flag to control UI state after enhance button is pressed
+            densityFactor: 1.0, // Default density factor for lights (new)
+            colorMarkers: [], // Array of {y, color} objects for color timing (new)
+            activeColorMarkerIndex: -1, // For color picker (new)
+            colorPickerPosition: null // For positioning the color picker (new)
         };
 
         // DOM Elements
@@ -377,6 +576,14 @@
             processingOverlay: document.getElementById('processingOverlay'),
             instructions: document.getElementById('instructions'),
             
+            // New Control Elements
+            densitySlider: document.getElementById('densitySlider'),
+            colorBar: document.getElementById('colorBar'),
+            colorPickerOverlay: document.getElementById('colorPickerOverlay'),
+            colorPickerInput: document.getElementById('colorPickerInput'),
+            selectColorBtn: document.getElementById('selectColorBtn'),
+            cancelColorBtn: document.getElementById('cancelColorBtn'),
+            
             // Maps
             mapsContainer: document.getElementById('mapsContainer'),
             depthMapImage: document.getElementById('depthMapImage'),
@@ -395,6 +602,191 @@
 
         // Initialize canvas context
         const ctx = elements.canvas.getContext('2d');
+
+        // Initialize with default colors
+        function initializeDefaultColors() {
+            // Add some default color markers
+            addColorMarker(0, '#ff0000');     // Red at top
+            addColorMarker(50, '#00ff00');    // Green at middle
+            addColorMarker(100, '#0000ff');   // Blue at bottom
+            addColorMarker(25, '#ffff00');    // Yellow at 25%
+            addColorMarker(75, '#ff00ff');    // Magenta at 75%
+        }
+
+        // -----------------------
+        // Density Slider Functions
+        // -----------------------
+        elements.densitySlider.addEventListener('input', function() {
+            state.densityFactor = parseFloat(this.value);
+            // If we have any ongoing light animations, update them
+            if (state.animatingLights && state.splines.some(spline => spline.length >= 2)) {
+                redrawCanvas();
+            }
+        });
+
+        // -----------------------
+        // Color Bar Functions
+        // -----------------------
+        elements.colorBar.addEventListener('click', function(e) {
+            const rect = this.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const percentage = (y / rect.height) * 100;
+            
+            // Store position for color picker
+            state.colorPickerPosition = percentage;
+            
+            // Show color picker
+            elements.colorPickerOverlay.classList.remove('hidden');
+        });
+
+        // Color Picker Buttons
+        elements.selectColorBtn.addEventListener('click', function() {
+            // Add new color marker at the stored position
+            if (state.colorPickerPosition !== null) {
+                addColorMarker(state.colorPickerPosition, elements.colorPickerInput.value);
+                state.colorPickerPosition = null;
+                elements.colorPickerOverlay.classList.add('hidden');
+                
+                // If we have any ongoing light animations, update them
+                if (state.animatingLights && state.splines.some(spline => spline.length >= 2)) {
+                    redrawCanvas();
+                }
+            }
+        });
+
+        elements.cancelColorBtn.addEventListener('click', function() {
+            state.colorPickerPosition = null;
+            elements.colorPickerOverlay.classList.add('hidden');
+        });
+
+        // Add a color marker at the specified position
+        function addColorMarker(percentage, color) {
+            // Create marker element
+            const marker = document.createElement('div');
+            marker.className = 'color-marker';
+            marker.style.top = `${percentage}%`;
+            marker.style.backgroundColor = color;
+            
+            // Store in state
+            state.colorMarkers.push({
+                y: percentage,
+                color: color,
+                element: marker
+            });
+            
+            // Sort markers by position (top to bottom)
+            state.colorMarkers.sort((a, b) => a.y - b.y);
+            
+            // Add to DOM
+            elements.colorBar.appendChild(marker);
+            
+            // Add click event to edit marker
+            marker.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent triggering colorBar click
+                
+                // Find index of this marker
+                const index = state.colorMarkers.findIndex(m => m.element === marker);
+                if (index !== -1) {
+                    // Set color picker to the current color
+                    elements.colorPickerInput.value = state.colorMarkers[index].color;
+                    
+                    // Store index for reference
+                    state.activeColorMarkerIndex = index;
+                    
+                    // Show color picker
+                    elements.colorPickerOverlay.classList.remove('hidden');
+                    
+                    // Update existing marker instead of adding new one
+                    elements.selectColorBtn.textContent = 'Update';
+                    
+                    // When updating, override the default behavior
+                    elements.selectColorBtn.onclick = function() {
+                        updateColorMarker(state.activeColorMarkerIndex, elements.colorPickerInput.value);
+                        elements.colorPickerOverlay.classList.add('hidden');
+                        
+                        // Reset button text and behavior
+                        elements.selectColorBtn.textContent = 'Select';
+                        elements.selectColorBtn.onclick = null;
+                        
+                        // If we have any ongoing light animations, update them
+                        if (state.animatingLights && state.splines.some(spline => spline.length >= 2)) {
+                            redrawCanvas();
+                        }
+                    };
+                }
+            });
+        }
+
+        // Update an existing color marker
+        function updateColorMarker(index, color) {
+            if (index >= 0 && index < state.colorMarkers.length) {
+                state.colorMarkers[index].color = color;
+                state.colorMarkers[index].element.style.backgroundColor = color;
+                state.activeColorMarkerIndex = -1;
+            }
+        }
+
+        // Get color based on position in the animation sequence
+        function getColorFromMarkers(position) {
+            // Position is 0-1 value representing where in the animation sequence we are
+            
+            // If no markers, use default colors
+            if (state.colorMarkers.length === 0) {
+                const defaultColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
+                return defaultColors[Math.floor(position * defaultColors.length) % defaultColors.length];
+            }
+            
+            // If only one marker, use that color
+            if (state.colorMarkers.length === 1) {
+                return state.colorMarkers[0].color;
+            }
+            
+            // Position is 0-1, but markers are stored as percentages (0-100)
+            const targetPosition = position * 100;
+            
+            // Find markers that bound this position
+            let lowerMarker = state.colorMarkers[0];
+            let upperMarker = state.colorMarkers[state.colorMarkers.length - 1];
+            
+            for (let i = 0; i < state.colorMarkers.length - 1; i++) {
+                if (state.colorMarkers[i].y <= targetPosition && state.colorMarkers[i + 1].y >= targetPosition) {
+                    lowerMarker = state.colorMarkers[i];
+                    upperMarker = state.colorMarkers[i + 1];
+                    break;
+                }
+            }
+            
+            // If position is outside the range of markers, use the closest marker
+            if (targetPosition <= lowerMarker.y) return lowerMarker.color;
+            if (targetPosition >= upperMarker.y) return upperMarker.color;
+            
+            // Calculate interpolation factor between markers
+            const range = upperMarker.y - lowerMarker.y;
+            const factor = (targetPosition - lowerMarker.y) / range;
+            
+            // Interpolate colors (simple RGB interpolation)
+            return interpolateColors(lowerMarker.color, upperMarker.color, factor);
+        }
+
+        // Helper function to interpolate between two colors
+        function interpolateColors(color1, color2, factor) {
+            // Convert hex to RGB
+            const r1 = parseInt(color1.substring(1, 3), 16);
+            const g1 = parseInt(color1.substring(3, 5), 16);
+            const b1 = parseInt(color1.substring(5, 7), 16);
+            
+            const r2 = parseInt(color2.substring(1, 3), 16);
+            const g2 = parseInt(color2.substring(3, 5), 16);
+            const b2 = parseInt(color2.substring(5, 7), 16);
+            
+            // Interpolate
+            const r = Math.round(r1 + factor * (r2 - r1));
+            const g = Math.round(g1 + factor * (g2 - g1));
+            const b = Math.round(b1 + factor * (b2 - b1));
+            
+            // Convert back to hex
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
 
         // -----------------------
         // Tab Navigation
@@ -529,6 +921,9 @@
             // Show processing overlay
             elements.processingOverlay.classList.remove('hidden');
             state.processing = true;
+            
+            // Initialize the default color markers
+            initializeDefaultColors();
             
             // Load and resize image for the canvas
             const img = new Image();
@@ -972,15 +1367,6 @@
             img.onload = () => {
                 let phase = 0;
                 
-                // List of light colors
-                const colors = [
-                    '#ff0000', // Red
-                    '#00ff00', // Green
-                    '#0000ff', // Blue
-                    '#ffff00', // Yellow
-                    '#ff00ff'  // Magenta
-                ];
-                
                 // Animation function
                 const animate = () => {
                     if (!state.animatingLights) return;
@@ -1027,8 +1413,9 @@
                         
                         // Draw each light
                         lightPoints.forEach((point, i) => {
-                            // Color based on position and animation phase
-                            const colorIndex = (i + Math.floor(phase)) % colors.length;
+                            // Color based on position in the animation sequence
+                            const colorPosition = (i / lightPoints.length + phase) % 1;
+                            const color = getColorFromMarkers(colorPosition);
                             
                             // Draw light with depth-based size
                             const depth = getDepthAtPoint(point.x, point.y);
@@ -1036,7 +1423,7 @@
                             
                             ctx.beginPath();
                             ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
-                            ctx.fillStyle = colors[colorIndex];
+                            ctx.fillStyle = color;
                             ctx.fill();
                             
                             // Add glow effect
@@ -1044,7 +1431,7 @@
                                 point.x, point.y, 0,
                                 point.x, point.y, size * 2
                             );
-                            gradient.addColorStop(0, colors[colorIndex]);
+                            gradient.addColorStop(0, color);
                             gradient.addColorStop(1, 'rgba(0,0,0,0)');
                             
                             ctx.beginPath();
@@ -1083,7 +1470,7 @@
                     }
                     
                     // Increment phase for animation
-                    phase += 0.1;
+                    phase += 0.05;
                     
                     // Continue animation
                     state.animationId = requestAnimationFrame(animate);
@@ -1110,7 +1497,12 @@
             if (spline.length < 1) return [];
             
             const points = [];
-            const THRESHOLD = 10; // Base threshold for placing a light
+            // Apply density factor to threshold
+            // For 0.5 (sparse): THRESHOLD is doubled
+            // For 1 (normal): THRESHOLD is unchanged
+            // For 2 (dense): THRESHOLD is halved
+            const baseThreshold = 10; // Base threshold for placing a light
+            const THRESHOLD = baseThreshold / state.densityFactor;
             const STEP_SIZE = 1; // Step size in pixels for traversing the spline
             
             // Process each segment of the spline
@@ -1130,7 +1522,7 @@
                 const steps = Math.ceil(segmentLength / STEP_SIZE);
                 
                 // Initialize depth accumulator
-                let depthAccumulator = THRESHOLD - STEP_SIZE;
+                let depthAccumulator = 0;
                 
                 // Track where the last light was placed to avoid double lights at junctions
                 let lastLightPosition = -1;
@@ -1156,7 +1548,8 @@
                         // Skip if we're at a junction point and this isn't the first segment
                         if (i > 0 && step === 0) {
                             // Reset accumulator but don't place light at junction
-                            depthAccumulator = 0;
+                            // IMPROVED: Subtract threshold instead of resetting to zero
+                            depthAccumulator -= THRESHOLD;
                             continue;
                         }
                         
@@ -1168,8 +1561,8 @@
                         // Place a light at this position
                         points.push({ x, y });
                         
-                        // Reset accumulator and update last light position
-                        depthAccumulator = 0;
+                        // IMPROVED: Subtract threshold instead of resetting to zero
+                        depthAccumulator -= THRESHOLD;
                         lastLightPosition = step;
                     }
                 }
@@ -1353,6 +1746,16 @@
             state.lineMap = null;
             state.enhancedImage = null;
             state.inEnhanceMode = false;
+            state.densityFactor = 1.0;
+            
+            // Reset density slider
+            elements.densitySlider.value = 1.0;
+            
+            // Clear color markers
+            while (elements.colorBar.firstChild) {
+                elements.colorBar.removeChild(elements.colorBar.firstChild);
+            }
+            state.colorMarkers = [];
             
             // Reset UI based on current mode
             if (state.mode === 'camera') {
@@ -1390,6 +1793,17 @@
             elements.clearBtn.disabled = true;
             elements.enhanceBtn.disabled = true;
         }
+        
+        // Initialize the app by setting up the color picker cancel button
+        elements.cancelColorBtn.addEventListener('click', function() {
+            elements.colorPickerOverlay.classList.add('hidden');
+            state.colorPickerPosition = null;
+            state.activeColorMarkerIndex = -1;
+            
+            // Reset select button behavior
+            elements.selectColorBtn.textContent = 'Select';
+            elements.selectColorBtn.onclick = null;
+        });
     </script>
 </body>
 </html>
