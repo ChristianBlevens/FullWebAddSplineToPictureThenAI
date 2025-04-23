@@ -81,7 +81,6 @@
             outline: none;
             writing-mode: bt-lr; /* Orient vertically */
             -webkit-appearance: slider-vertical;
-            /* Remove the transform to fix the orientation */
         }
         
         .density-slider::-webkit-slider-thumb {
@@ -157,7 +156,7 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
         
-        .color-marker:hover::after {
+        .color-marker::after {
             content: "×";
             position: absolute;
             top: -12px;
@@ -712,8 +711,8 @@
                 const clickX = e.clientX - rect.left;
                 const clickY = e.clientY - rect.top;
                 
-                // If we clicked in the upper right quadrant (where the × appears on hover)
-                if (clickX > rect.width/2 && clickY < rect.height/2) {
+                // If we clicked in the upper right quadrant (top 25% not 50%) (where the × appears on hover)
+                if (clickX > rect.width/1.33 && clickY < rect.height/1.33) {
                     // Remove this marker
                     const index = state.colorMarkers.findIndex(m => m.element === marker);
                     if (index !== -1) {
