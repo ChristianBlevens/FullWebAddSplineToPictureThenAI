@@ -466,9 +466,6 @@
                     <!-- Density Slider -->
                     <div class="density-slider-container">
                         <input type="range" min="0.5" max="2" step="0.01" value="1" class="density-slider" id="densitySlider">
-                        <div class="slider-tick max"><span class="slider-value">2.0</span></div>
-                        <div class="slider-tick mid"><span class="slider-value">1.0</span></div>
-                        <div class="slider-tick min"><span class="slider-value">0.5</span></div>
                         <div class="density-label">Density</div>
                     </div>
                     
@@ -488,6 +485,12 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Speed Slider -->
+            <div class="speed-slider-container">
+                <div class="speed-label">Animation Speed</div>
+                <input type="range" min="0.1" max="2" step="0.1" value="1" class="speed-slider" id="speedSlider">
             </div>
             
             <div id="instructions" class="instructions">Click to add points for your Christmas lights</div>
@@ -554,7 +557,8 @@
             densityFactor: 1.0, // Default density factor for lights (new)
             colorMarkers: [], // Array of {y, color} objects for color timing (new)
             activeColorMarkerIndex: -1, // For color picker (new)
-            colorPickerPosition: null // For positioning the color picker (new)
+            colorPickerPosition: null, // For positioning the color picker (new)
+            animationSpeed: 1.0 // Default animation speed (new)
         };
 
         // DOM Elements
@@ -593,6 +597,7 @@
             colorPickerInput: document.getElementById('colorPickerInput'),
             selectColorBtn: document.getElementById('selectColorBtn'),
             cancelColorBtn: document.getElementById('cancelColorBtn'),
+            speedSlider: document.getElementById('speedSlider'),
             
             // Maps
             mapsContainer: document.getElementById('mapsContainer'),
@@ -632,6 +637,14 @@
             if (state.animatingLights && state.splines.some(spline => spline.length >= 2)) {
                 redrawCanvas();
             }
+        });
+
+        // -----------------------
+        // Speed Slider Functions
+        // -----------------------
+        elements.speedSlider.addEventListener('input', function() {
+            state.animationSpeed = parseFloat(this.value);
+            // No need to redraw here as the animation loop will use the new speed value
         });
 
         // -----------------------
@@ -797,7 +810,7 @@
             }
         }
 
-        // Get color based on position in the animation sequence
+        // Get color based on position in the animation sequence and transition speed
         function getColorFromMarkers(position) {
             // Position is 0-1 value representing where in the animation sequence we are
             
@@ -812,8 +825,13 @@
                 return state.colorMarkers[0].color;
             }
             
+            // The animation speed will affect how quickly we move through the color range
+            // Low speed = slower transitions = smaller effective position difference between markers
+            // High speed = faster transitions = larger effective position difference between markers
+            
             // Position is 0-1, but markers are stored as percentages (0-100)
-            const targetPosition = position * 100;
+            // Use animation speed to modify how we traverse the position space
+            const targetPosition = (position * 100) % 100;
             
             // Find markers that bound this position
             let lowerMarker = state.colorMarkers[0];
@@ -833,7 +851,7 @@
             
             // Calculate interpolation factor between markers
             const range = upperMarker.y - lowerMarker.y;
-            const factor = (targetPosition - lowerMarker.y) / range;
+            let factor = (targetPosition - lowerMarker.y) / range;
             
             // Interpolate colors (simple RGB interpolation)
             return interpolateColors(lowerMarker.color, upperMarker.color, factor);
@@ -1541,7 +1559,8 @@
                     }
                     
                     // Increment phase for animation
-                    phase += 0.05;
+                    // Adjust phase increment by animation speed
+                    phase += 0.01 * state.animationSpeed;
                     
                     // Continue animation
                     state.animationId = requestAnimationFrame(animate);
@@ -1593,7 +1612,7 @@
                 const steps = Math.ceil(segmentLength / STEP_SIZE);
                 
                 // Initialize depth accumulator
-                let depthAccumulator = 0;
+                let depthAccumulator = THRESHOLD - STEP_SIZE;
                 
                 // Track where the last light was placed to avoid double lights at junctions
                 let lastLightPosition = -1;
@@ -1818,9 +1837,11 @@
             state.enhancedImage = null;
             state.inEnhanceMode = false;
             state.densityFactor = 1.0;
+            state.animationSpeed = 1.0;
             
-            // Reset density slider
+            // Reset sliders
             elements.densitySlider.value = 1.0;
+            elements.speedSlider.value = 1.0;
             
             // Clear color markers
             while (elements.colorBar.firstChild) {
