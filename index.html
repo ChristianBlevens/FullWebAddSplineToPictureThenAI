@@ -81,7 +81,7 @@
             outline: none;
             writing-mode: bt-lr; /* Orient vertically */
             -webkit-appearance: slider-vertical;
-            transform: rotate(180deg);
+            /* Remove the transform to fix the orientation */
         }
         
         .density-slider::-webkit-slider-thumb {
@@ -139,14 +139,7 @@
         .color-bar-container {
             height: 200px;
             width: 40px;
-            background: linear-gradient(
-                to bottom,
-                #ff0000,
-                #00ff00,
-                #0000ff,
-                #ffff00,
-                #ff00ff
-            );
+            background: #f0f0f0; /* Neutral background instead of predefined gradient */
             border-radius: 8px;
             position: relative;
             overflow: visible;
@@ -162,6 +155,23 @@
             transform: translateY(-50%);
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .color-marker:hover::after {
+            content: "×";
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            width: 16px;
+            height: 16px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            line-height: 16px;
+            text-align: center;
+            font-weight: bold;
+            opacity: 0.9;
         }
         
         .input-container {
@@ -684,7 +694,29 @@
             marker.addEventListener('click', function(e) {
                 e.stopPropagation(); // Prevent triggering colorBar click
                 
-                // Find index of this marker
+                // Check if we clicked on the delete button area (upper right corner)
+                const rect = marker.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                // If we clicked in the upper right quadrant (where the × appears on hover)
+                if (clickX > rect.width/2 && clickY < rect.height/2) {
+                    // Remove this marker
+                    const index = state.colorMarkers.findIndex(m => m.element === marker);
+                    if (index !== -1) {
+                        state.colorMarkers.splice(index, 1);
+                        elements.colorBar.removeChild(marker);
+                        updateColorBarGradient();
+                        
+                        // If we have any ongoing light animations, update them
+                        if (state.animatingLights && state.splines.some(spline => spline.length >= 2)) {
+                            redrawCanvas();
+                        }
+                    }
+                    return;
+                }
+                
+                // Find index of this marker for editing
                 const index = state.colorMarkers.findIndex(m => m.element === marker);
                 if (index !== -1) {
                     // Set color picker to the current color
@@ -715,6 +747,42 @@
                     };
                 }
             });
+            
+            // Update color bar gradient after adding a marker
+            updateColorBarGradient();
+        }
+
+        // Update the color bar gradient based on current markers
+        function updateColorBarGradient() {
+            if (state.colorMarkers.length === 0) {
+                elements.colorBar.style.background = '#f0f0f0'; // Neutral background
+                return;
+            }
+            
+            // If only one marker, solid color
+            if (state.colorMarkers.length === 1) {
+                elements.colorBar.style.background = state.colorMarkers[0].color;
+                return;
+            }
+            
+            // Build gradient based on markers
+            let gradientStops = '';
+            
+            // Sort markers by position
+            const sortedMarkers = [...state.colorMarkers].sort((a, b) => a.y - b.y);
+            
+            // Create gradient stops for each marker
+            sortedMarkers.forEach((marker, i) => {
+                gradientStops += `${marker.color} ${marker.y}%`;
+                
+                // Add comma separator except for the last item
+                if (i < sortedMarkers.length - 1) {
+                    gradientStops += ', ';
+                }
+            });
+            
+            // Apply the gradient
+            elements.colorBar.style.background = `linear-gradient(to bottom, ${gradientStops})`;
         }
 
         // Update an existing color marker
@@ -723,6 +791,9 @@
                 state.colorMarkers[index].color = color;
                 state.colorMarkers[index].element.style.backgroundColor = color;
                 state.activeColorMarkerIndex = -1;
+                
+                // Update color bar gradient after changing a marker
+                updateColorBarGradient();
             }
         }
 
