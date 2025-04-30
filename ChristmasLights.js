@@ -1,0 +1,241 @@
+function startLightsAnimation() {
+	state.animatingLights = true;
+	
+	// Load original image
+	const img = new Image();
+	img.onload = () => {
+		let phase = 0;
+		
+		// Animation function
+		const animate = () => {
+			if (!state.animatingLights) return;
+			
+			// Draw background image
+			ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
+			
+			// Only draw splines if we're not in enhance mode
+			// This is for the editing view only, not for the final image
+			if (!state.inEnhanceMode) {
+				// Draw all splines with points for editing
+				for (const spline of state.splines) {
+					// Draw straight lines between points
+					if (spline.length >= 2) {
+						ctx.beginPath();
+						ctx.moveTo(spline[0].x, spline[0].y);
+						
+						for (let i = 1; i < spline.length; i++) {
+							ctx.lineTo(spline[i].x, spline[i].y);
+						}
+						
+						ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+						ctx.lineWidth = 1;
+						ctx.stroke();
+					}
+				}
+			}
+			
+			// Draw lights for each spline
+			for (const spline of state.splines) {
+				if (spline.length < 2) {
+					// For splines with only one point, just draw the point if not in enhance mode
+					if (spline.length === 1 && !state.inEnhanceMode) {
+						ctx.beginPath();
+						ctx.arc(spline[0].x, spline[0].y, 5, 0, Math.PI * 2);
+						ctx.fillStyle = 'red';
+						ctx.fill();
+					}
+					continue;
+				}
+				
+				// Calculate evenly spaced points along the spline, adjusted for depth
+				const lightPoints = calculateDepthAdjustedLightPoints(spline);
+				
+				// Draw each light
+				lightPoints.forEach((point, i) => {
+					// Color based on position in the animation sequence
+					const colorPosition = (i / lightPoints.length + phase) % 1;
+					const color = getColorFromMarkers(colorPosition);
+					
+					// Draw light with depth-based size
+					const depth = getDepthAtPoint(point.x, point.y);
+					const size = 3 + (depth * 7); // Size between 3-10px
+					
+					ctx.beginPath();
+					ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+					ctx.fillStyle = color;
+					ctx.fill();
+					
+					// Add glow effect
+					const gradient = ctx.createRadialGradient(
+						point.x, point.y, 0,
+						point.x, point.y, size * 2
+					);
+					gradient.addColorStop(0, color);
+					gradient.addColorStop(1, 'rgba(0,0,0,0)');
+					
+					ctx.beginPath();
+					ctx.arc(point.x, point.y, size * 2, 0, Math.PI * 2);
+					ctx.fillStyle = gradient;
+					ctx.fill();
+				});
+			}
+			
+			// Draw control points on top of lights only if not in enhance mode
+			if (!state.inEnhanceMode) {
+				for (const spline of state.splines) {
+					// Draw points
+					for (const point of spline) {
+						ctx.beginPath();
+						ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+						ctx.fillStyle = 'red';
+						ctx.fill();
+						ctx.strokeStyle = 'white';
+						ctx.lineWidth = 1;
+						ctx.stroke();
+					}
+				}
+				
+				// Highlight the last clicked point if any
+				if (state.lastClickedPoint) {
+					const { splineIndex, pointIndex } = state.lastClickedPoint;
+					const point = state.splines[splineIndex][pointIndex];
+					
+					ctx.beginPath();
+					ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+					ctx.strokeStyle = '#00ffff';
+					ctx.lineWidth = 2;
+					ctx.stroke();
+				}
+			}
+			
+			// Increment phase for animation
+			// Adjust phase increment by animation speed
+			phase += 0.01 * state.animationSpeed;
+			
+			// Continue animation
+			state.animationId = requestAnimationFrame(animate);
+		};
+		
+		// Start animation loop
+		animate();
+	};
+	
+	img.src = state.fullResImage;
+}
+
+function stopLightsAnimation() {
+	state.animatingLights = false;
+	
+	if (state.animationId) {
+		cancelAnimationFrame(state.animationId);
+		state.animationId = null;
+	}
+}
+
+function calculateDepthAdjustedLightPoints(spline) {
+	// Calculate points along a spline for lights using a depth accumulation method
+	if (spline.length < 1) return [];
+	
+	const points = [];
+	// Apply density factor to threshold
+	// For 0.5 (sparse): THRESHOLD is doubled
+	// For 1 (normal): THRESHOLD is unchanged
+	// For 2 (dense): THRESHOLD is halved
+	const baseThreshold = 10; // Base threshold for placing a light
+	const THRESHOLD = baseThreshold / state.densityFactor;
+	const STEP_SIZE = 1; // Step size in pixels for traversing the spline
+	
+	// Process each segment of the spline
+	for (let i = 0; i < spline.length - 1; i++) {
+		const start = spline[i];
+		const end = spline[i + 1];
+		
+		// Calculate segment properties
+		const dx = end.x - start.x;
+		const dy = end.y - start.y;
+		const segmentLength = Math.sqrt(dx * dx + dy * dy);
+		
+		// Skip very short segments
+		if (segmentLength < 5) continue;
+		
+		// Calculate number of steps for this segment
+		const steps = Math.ceil(segmentLength / STEP_SIZE);
+		
+		// Initialize depth accumulator
+		let depthAccumulator = THRESHOLD - STEP_SIZE;
+		
+		// Track where the last light was placed to avoid double lights at junctions
+		let lastLightPosition = -1;
+		
+		// Traverse the segment step by step
+		for (let step = 0; step <= steps; step++) {
+			const t = step / steps;
+			
+			// Calculate current position along the segment
+			const x = start.x + dx * t;
+			const y = start.y + dy * t;
+			
+			// Sample depth at current position
+			const depth = getDepthAtPoint(x, y);
+			
+			// Accumulate depth
+			// Use depth factor to make deeper areas (higher depth values) accumulate faster
+			const depthFactor = 0.5 + (depth * 1.5); // Ranges from 0.5-2.0
+			depthAccumulator += depthFactor * (STEP_SIZE / 10);
+			
+			// Check if we should place a light
+			if (depthAccumulator >= THRESHOLD) {
+				// Skip if we're at a junction point and this isn't the first segment
+				if (i > 0 && step === 0) {
+					// Reset accumulator but don't place light at junction
+					// IMPROVED: Subtract threshold instead of resetting to zero
+					depthAccumulator -= THRESHOLD;
+					continue;
+				}
+				
+				// Skip if we're too close to the last light
+				if (lastLightPosition !== -1 && (step - lastLightPosition) < 3) {
+					continue;
+				}
+				
+				// Place a light at this position
+				points.push({ x, y });
+				
+				// IMPROVED: Subtract threshold instead of resetting to zero
+				depthAccumulator -= THRESHOLD;
+				lastLightPosition = step;
+			}
+		}
+	}
+	
+	return points;
+}
+
+function getDepthAtPoint(x, y) {
+	// Convert canvas coordinates to depth map coordinates
+	const depthX = Math.floor((x / elements.canvas.width) * 640);
+	const depthY = Math.floor((y / elements.canvas.height) * 480);
+	
+	// In a real implementation, this would sample the actual depth map
+	// For this demo, we create a more dynamic depth map with various patterns
+	
+	// Base depth from Y position (higher = further)
+	let depth = depthY / 480;
+	
+	// Add horizontal bands of varying depth
+	const bandDepth = 0.2 * Math.sin(depthY / 30);
+	
+	// Add some vertical variation
+	const verticalVariation = 0.1 * Math.sin(depthX / 40);
+	
+	// Add diagonal variation
+	const diagonalVariation = 0.15 * Math.sin((depthX + depthY) / 50);
+	
+	// Combine all variations
+	depth = depth + bandDepth + verticalVariation + diagonalVariation;
+	
+	// Normalize to 0-1 range
+	depth = Math.max(0, Math.min(1, depth));
+	
+	return depth;
+}
