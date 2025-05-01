@@ -90,7 +90,7 @@ function handleCanvasClick(e) {
 }
 
 function findExistingPoint(x, y) {
-	const threshold = 10; // Distance threshold for clicking on a point
+	const threshold = 20; // Distance threshold for clicking on a point
 	
 	for (let splineIndex = 0; splineIndex < state.splines.length; splineIndex++) {
 		const spline = state.splines[splineIndex];

@@ -16,6 +16,9 @@ function enhanceImage() {
 	elements.lineToggleBtn.classList.add('hidden');
 	elements.downloadBtn.classList.remove('hidden');
 	
+	// Hide control sidebar
+	document.querySelector('.control-sidebar').style.display = 'none';
+
 	// Hide overlays
 	elements.depthOverlayCanvas.classList.add('hidden');
 	elements.lineOverlayCanvas.classList.add('hidden');

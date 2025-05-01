@@ -60,7 +60,7 @@ function startLightsAnimation() {
 						
 						// Draw light with depth-based size
 						const depth = getDepthAtPoint(point.x, point.y);
-						const size = 3 + (depth * 7); // Size between 3-10px
+						const size = 1 + (depth * 5); // Size between 1-6px
 						
 						elements.lightsCtx.beginPath();
 						elements.lightsCtx.arc(point.x, point.y, size, 0, Math.PI * 2);
@@ -74,14 +74,25 @@ function startLightsAnimation() {
 						const b = parseInt(color.substring(5, 7), 16);
 						
 						// Create radial gradient with same color as the light but with decreasing opacity
-						const glowSize = size * (2 + state.glowSizeFactor); // Adjust glow size based on slider
+						const glowSize = (size + (40 * state.glowSizeFactor)) * depth; // Adjust glow size based on slider
+						const baseAlpha = 0.9; // Adjust base transparency (0-1)
 						const gradient = elements.lightsCtx.createRadialGradient(
 							point.x, point.y, 0,
 							point.x, point.y, glowSize
 						);
-						gradient.addColorStop(0, color);
-						gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.5)`);
-						gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+						
+						// The exponent value controls how quickly the fade happens (higher = faster fade)
+						const exponent = 4; // Adjust this value to control fade speed (2-4 for exponential)
+						const stepCount = 20; // How smooth the gradient is
+
+						// Add many more color stops for smoother transition
+						for (let i = 0; i <= stepCount; i++) {
+							const position = i / stepCount;
+							// Use exponential function for opacity calculation
+							// This creates a true exponential curve
+							const opacity = baseAlpha * Math.pow(1 - position, exponent);
+							gradient.addColorStop(position, `rgba(${r}, ${g}, ${b}, ${opacity})`);
+						}
 						
 						elements.lightsCtx.beginPath();
 						elements.lightsCtx.arc(point.x, point.y, glowSize, 0, Math.PI * 2);
@@ -121,7 +132,7 @@ function startLightsAnimation() {
 			
 			// Increment phase for animation
 			// Adjust phase increment by animation speed
-			phase += 0.01 * state.animationSpeed;
+			phase += 0.03 * state.animationSpeed;
 			
 			// Continue animation
 			state.animationId = requestAnimationFrame(animate);

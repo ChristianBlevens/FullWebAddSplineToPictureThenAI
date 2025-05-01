@@ -23,6 +23,9 @@ function resetApp() {
 	elements.speedSlider.value = 1.0;
 	elements.glowSizeSlider.value = 1.0;
 	
+	// Reset control sidebar
+	document.querySelector('.control-sidebar').style.display = 'block';
+
 	// Reset overlays
 	elements.depthOverlayCanvas.classList.remove('hidden');
 	elements.lineOverlayCanvas.classList.remove('hidden');
