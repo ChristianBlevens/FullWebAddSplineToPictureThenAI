@@ -39,18 +39,7 @@ function resetApp() {
 		elements.lineOverlayCanvas.parentNode.removeChild(elements.lineOverlayCanvas);
 		elements.lineOverlayCanvas = null;
 	}
-	
-	// Remove toggle buttons if they exist
-	const depthToggleBtn = document.getElementById('depthToggleBtn');
-	if (depthToggleBtn) {
-		depthToggleBtn.parentNode.removeChild(depthToggleBtn);
-	}
-	
-	const lineToggleBtn = document.getElementById('lineToggleBtn');
-	if (lineToggleBtn) {
-		lineToggleBtn.parentNode.removeChild(lineToggleBtn);
-	}
-	
+
 	// Show title and tabs again
 	const appTitle = document.querySelector('h1');
 	const tabContainer = document.querySelector('.tab-container');

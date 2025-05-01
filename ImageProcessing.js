@@ -114,6 +114,9 @@ function createLightsOverlay() {
     elements.lightsOverlayCanvas.addEventListener('click', handleCanvasClick);
 }
 
+// Add toggle event
+depthToggleBtn.addEventListener('click', toggleDepthMap);
+
 function createDepthMapOverlay() {
 	// Create depth map overlay canvas if it doesn't exist
 	if (!elements.depthOverlayCanvas) {
@@ -125,16 +128,6 @@ function createDepthMapOverlay() {
 		
 		// Add to DOM
 		elements.canvas.parentNode.appendChild(elements.depthOverlayCanvas);
-		
-		// Create depth toggle button in the main button container instead
-		const depthToggleBtn = document.createElement('button');
-		depthToggleBtn.id = 'depthToggleBtn';
-		depthToggleBtn.className = 'button button-blue';
-		depthToggleBtn.textContent = 'Toggle Depth Map';
-		elements.editorButtons.appendChild(depthToggleBtn);
-		
-		// Add toggle event
-		depthToggleBtn.addEventListener('click', toggleDepthMap);
 	}
 	
 	// Draw depth map (filler data - all white)
@@ -142,6 +135,9 @@ function createDepthMapOverlay() {
 	depthCtx.fillStyle = 'white'; // Value of 1
 	depthCtx.fillRect(0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
 }
+
+// Add toggle event
+lineToggleBtn.addEventListener('click', toggleLineData);
 
 function createLineDataOverlay() {
 	// Create line data overlay canvas if it doesn't exist
@@ -154,16 +150,6 @@ function createLineDataOverlay() {
 		
 		// Add to DOM
 		elements.canvas.parentNode.appendChild(elements.lineOverlayCanvas);
-		
-		// Create line toggle button in the main button container
-		const lineToggleBtn = document.createElement('button');
-		lineToggleBtn.id = 'lineToggleBtn';
-		lineToggleBtn.className = 'button button-orange';
-		lineToggleBtn.textContent = 'Toggle Line Data';
-		elements.editorButtons.appendChild(lineToggleBtn);
-		
-		// Add toggle event
-		lineToggleBtn.addEventListener('click', toggleLineData);
 	}
 	
 	// Draw line data
