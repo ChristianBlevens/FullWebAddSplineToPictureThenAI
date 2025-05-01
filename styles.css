@@ -54,7 +54,7 @@ h1 {
 }
 
 .density-slider-container {
-    height: 200px;
+    height: 150px;
     width: 40px;
     background-color: #e2e8f0;
     border-radius: 8px;
@@ -130,7 +130,7 @@ h1 {
 }
 
 .color-bar-container {
-    height: 200px;
+    height: 150px;
     width: 40px;
     background: #f0f0f0; /* Neutral background instead of predefined gradient */
     border-radius: 8px;
@@ -140,7 +140,7 @@ h1 {
 }
 
 .speed-slider-container {
-    height: 200px;
+    height: 150px;
     width: 40px;
     background-color: #e2e8f0;
     border-radius: 8px;
@@ -149,6 +149,7 @@ h1 {
     flex-direction: column;
     align-items: center;
     padding: 10px 0;
+    margin-bottom: 15px;
 }
 
 .speed-slider {
@@ -181,6 +182,54 @@ h1 {
 }
 
 .speed-label {
+    font-size: 10px;
+    margin-top: 5px;
+    color: #4a5568;
+    text-align: center;
+}
+
+.glow-size-slider-container {
+    height: 150px;
+    width: 40px;
+    background-color: #e2e8f0;
+    border-radius: 8px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.glow-size-slider {
+    width: 100%;
+    height: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    outline: none;
+    writing-mode: vertical-lr;
+    direction: rtl;
+}
+
+.glow-size-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+}
+
+.glow-size-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+}
+
+.glow-size-label {
     font-size: 10px;
     margin-top: 5px;
     color: #4a5568;
@@ -497,12 +546,13 @@ video {
     }
     
     .density-slider-container,
-    .color-bar-container,
-    .speed-slider-container {
-        height: 150px;
-        margin-bottom: 0;
-        margin-right: 5px;
-    }
+	.color-bar-container,
+	.speed-slider-container,
+	.glow-size-slider-container {
+		height: 150px;
+		margin-bottom: 0;
+		margin-right: 5px;
+	}
     
     .input-container {
         max-width: 100%;

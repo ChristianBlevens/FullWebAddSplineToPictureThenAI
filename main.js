@@ -18,7 +18,8 @@ const state = {
     colorMarkers: [], // Array of {y, color} objects for color timing (new)
     activeColorMarkerIndex: -1, // For color picker (new)
     colorPickerPosition: null, // For positioning the color picker (new)
-    animationSpeed: 1.0 // Default animation speed (new)
+    animationSpeed: 1.0, // Default animation speed (new)
+    glowSizeFactor: 1.0 // Default glow size factor for light glow effects
 };
 
 // DOM Elements
@@ -64,6 +65,7 @@ const elements = {
     selectColorBtn: document.getElementById('selectColorBtn'),
     cancelColorBtn: document.getElementById('cancelColorBtn'),
     speedSlider: document.getElementById('speedSlider'),
+	glowSizeSlider: document.getElementById('glowSizeSlider'),
     
     // Results
     enhancedImage: document.getElementById('enhancedImage'),

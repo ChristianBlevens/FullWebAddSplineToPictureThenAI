@@ -16,10 +16,12 @@ function resetApp() {
 	state.inEnhanceMode = false;
 	state.densityFactor = 1.0;
 	state.animationSpeed = 1.0;
+	state.glowSizeFactor = 1.0;
 	
 	// Reset sliders
 	elements.densitySlider.value = 1.0;
 	elements.speedSlider.value = 1.0;
+	elements.glowSizeSlider.value = 1.0;
 	
 	// Clear color markers
 	while (elements.colorBar.firstChild) {
@@ -48,6 +50,13 @@ function resetApp() {
 	if (lineToggleBtn) {
 		lineToggleBtn.parentNode.removeChild(lineToggleBtn);
 	}
+	
+	// Show title and tabs again
+	const appTitle = document.querySelector('h1');
+	const tabContainer = document.querySelector('.tab-container');
+
+	if (appTitle) appTitle.classList.remove('hidden');
+	if (tabContainer) tabContainer.classList.remove('hidden');
 	
 	// Reset UI based on current mode
 	if (state.mode === 'camera') {

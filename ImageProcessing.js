@@ -5,6 +5,13 @@ function processImage(imageUrl) {
 	elements.editorView.classList.remove('hidden');
 	elements.resultsContainer.classList.add('hidden');
 	
+	// Hide the title and tab navigation when entering editing view
+	const appTitle = document.querySelector('h1');
+	const tabContainer = document.querySelector('.tab-container');
+	
+	if (appTitle) appTitle.classList.add('hidden');
+	if (tabContainer) tabContainer.classList.add('hidden');
+	
 	// Show processing overlay
 	elements.processingOverlay.classList.remove('hidden');
 	state.processing = true;

@@ -68,15 +68,23 @@ function startLightsAnimation() {
 						elements.lightsCtx.fill();
 						
 						// Add glow effect
+						// Extract RGB components from the color
+						const r = parseInt(color.substring(1, 3), 16);
+						const g = parseInt(color.substring(3, 5), 16);
+						const b = parseInt(color.substring(5, 7), 16);
+						
+						// Create radial gradient with same color as the light but with decreasing opacity
+						const glowSize = size * (2 + state.glowSizeFactor); // Adjust glow size based on slider
 						const gradient = elements.lightsCtx.createRadialGradient(
 							point.x, point.y, 0,
-							point.x, point.y, size * 2
+							point.x, point.y, glowSize
 						);
 						gradient.addColorStop(0, color);
-						gradient.addColorStop(1, 'rgba(0,0,0,0)');
+						gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.5)`);
+						gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 						
 						elements.lightsCtx.beginPath();
-						elements.lightsCtx.arc(point.x, point.y, size * 2, 0, Math.PI * 2);
+						elements.lightsCtx.arc(point.x, point.y, glowSize, 0, Math.PI * 2);
 						elements.lightsCtx.fillStyle = gradient;
 						elements.lightsCtx.fill();
 					});
