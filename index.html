@@ -51,7 +51,7 @@
             <div class="button-container">
                 <input type="file" id="fileInput" class="file-input" accept="image/*">
                 <label for="fileInput" class="file-label">Choose Image</label>
-                <button id="useImageBtn" class="button button-blue hidden">Use This Image</button>
+                <button id="useImageBtn" class="button button-green hidden">Use This Image</button>
             </div>
         </div>
         
@@ -83,17 +83,20 @@
                         <div class="glow-size-label">Glow</div>
                     </div>
                 </div>
-                
+
                 <!-- Main Canvas Container -->
-                <div class="input-container">
-                    <canvas id="canvas" class="crosshair"></canvas>
-                    <div id="processingOverlay" class="processing-overlay hidden">
-                        <p>Processing image...</p>
-                        <div class="progress">
-                            <div class="progress-bar"></div>
-                        </div>
-                    </div>
-                </div>
+				<div class="input-container">
+					<canvas id="canvas" class="crosshair"></canvas>
+					<canvas id="lightsOverlayCanvas" class="overlay-canvas"></canvas>
+					<canvas id="depthOverlayCanvas" class="overlay-canvas hidden"></canvas>
+					<canvas id="lineOverlayCanvas" class="overlay-canvas hidden"></canvas>
+					<div id="processingOverlay" class="processing-overlay hidden">
+						<p>Processing image...</p>
+						<div class="progress">
+							<div class="progress-bar"></div>
+						</div>
+					</div>
+				</div>
             </div>
             
             <div id="instructions" class="instructions">Click to add points for your Christmas lights</div>

@@ -53,10 +53,10 @@ const elements = {
     instructions: document.getElementById('instructions'),
     
     // Overlay Canvases (new)
-    depthOverlayCanvas: null, // Will be created dynamically
-    lineOverlayCanvas: null, // Will be created dynamically
-    lightsOverlayCanvas: null, // Will be created dynamically
-    lightsCtx: null, // Context for the lights overlay canvas
+    depthOverlayCanvas: document.getElementById('depthOverlayCanvas'),
+	lineOverlayCanvas: document.getElementById('lineOverlayCanvas'),
+	lightsOverlayCanvas: document.getElementById('lightsOverlayCanvas'),
+	lightsCtx: null, // We'll initialize this in the init function
     
     // Control Elements
     densitySlider: document.getElementById('densitySlider'),
@@ -77,7 +77,9 @@ const elements = {
     enhanceBtn: document.getElementById('enhanceBtn'),
     downloadBtn: document.getElementById('downloadBtn'),
     resetBtn: document.getElementById('resetBtn'),
-    editorButtons: document.getElementById('editorButtons')
+    editorButtons: document.getElementById('editorButtons'),
+	depthToggleBtn: document.getElementById('depthToggleBtn'),
+	lineToggleBtn: document.getElementById('lineToggleBtn')
 };
 
 // Initialize canvas context
@@ -92,3 +94,15 @@ function initializeDefaultColors() {
     addColorMarker(25, '#ffff00');    // Yellow at 25%
     addColorMarker(75, '#ff00ff');    // Magenta at 75%
 }
+
+// Initialize the canvas contexts
+function initializeCanvasContexts() {
+    // Lights overlay context
+    elements.lightsCtx = elements.lightsOverlayCanvas.getContext('2d');
+    
+    // Add click event to lights overlay
+    elements.lightsOverlayCanvas.addEventListener('click', handleCanvasClick);
+}
+
+// Call this function after the DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeCanvasContexts);

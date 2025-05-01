@@ -1,67 +1,58 @@
+// Add toggle events
+depthToggleBtn.addEventListener('click', toggleDepthMap);
+lineToggleBtn.addEventListener('click', toggleLineData);
+
 function processImage(imageUrl) {
-	// Show editor view and hide input views
-	elements.cameraView.classList.add('hidden');
-	elements.fileView.classList.add('hidden');
-	elements.editorView.classList.remove('hidden');
-	elements.resultsContainer.classList.add('hidden');
-	
-	// Hide the title and tab navigation when entering editing view
-	const appTitle = document.querySelector('h1');
-	const tabContainer = document.querySelector('.tab-container');
-	
-	if (appTitle) appTitle.classList.add('hidden');
-	if (tabContainer) tabContainer.classList.add('hidden');
-	
-	// Show processing overlay
-	elements.processingOverlay.classList.remove('hidden');
-	state.processing = true;
-	
-	// Initialize the default color markers
-	initializeDefaultColors();
-	
-	// Load and resize image for the canvas
-	const img = new Image();
-	img.onload = () => {
-		// Create a 400x400 version for processing
-		state.lowResImage = createResizedVersion(img, 400, 400);
-		
-		// Generate maps (filler data for now)
-		setTimeout(() => {
-			// Create depth map with value of 1 (filler data)
-			state.depthMap = createFillerDepthMap();
-			
-			// Create line data (filler data)
-			state.lineData = {"lines":[[{"x":300,"y":300},{"x":100,"y":100}]]};
-			
-			// Initialize canvas with 1000x1000 image
-			initializeCanvas(imageUrl, 1000, 1000);
-			
-			// Hide processing overlay
-			elements.processingOverlay.classList.add('hidden');
-			state.processing = false;
-			
-			// Setup event listeners on the canvas
-			setupCanvasListeners();
-			
-			// Start in drawing mode automatically
-			startLightsAnimation();
-			
-			// Scroll down to hide tabs
-			setTimeout(() => {
-				// Scroll down just enough to hide the tabs
-				const tabContainer = document.querySelector('.tab-container');
-				if (tabContainer) {
-					const tabBottom = tabContainer.getBoundingClientRect().bottom;
-					window.scrollTo({
-						top: tabBottom,
-						behavior: 'smooth'
-					});
-				}
-			}, 100);
-		}, 1500);
-	};
-	
-	img.src = imageUrl;
+    // Show editor view and hide input views
+    elements.cameraView.classList.add('hidden');
+    elements.fileView.classList.add('hidden');
+    elements.editorView.classList.remove('hidden');
+    elements.resultsContainer.classList.add('hidden');
+    
+    // Hide the title and tab navigation when entering editing view
+    const appTitle = document.querySelector('h1');
+    const tabContainer = document.querySelector('.tab-container');
+    
+    if (appTitle) appTitle.classList.add('hidden');
+    if (tabContainer) tabContainer.classList.add('hidden');
+    
+    // Show processing overlay
+    elements.processingOverlay.classList.remove('hidden');
+    state.processing = true;
+    
+    // Initialize the default color markers
+    initializeDefaultColors();
+    
+    // Load and resize image for the canvas
+    const img = new Image();
+    img.onload = () => {
+        // Create a 400x400 version for processing
+        state.lowResImage = createResizedVersion(img, 400, 400);
+        
+        // Generate maps (filler data for now)
+        setTimeout(() => {
+            // Create depth map with value of 1 (filler data)
+            state.depthMap = createFillerDepthMap();
+            
+            // Create line data (filler data)
+            state.lineData = {"lines":[[{"x":300,"y":300},{"x":100,"y":100}]]};
+            
+            // Initialize canvas with 1000x1000 image
+            initializeCanvas(imageUrl, 1000, 1000);
+            
+            // Hide processing overlay
+            elements.processingOverlay.classList.add('hidden');
+            state.processing = false;
+            
+            // Setup event listeners on the canvas (if needed)
+            setupCanvasListeners();
+            
+            // Start in drawing mode automatically
+            startLightsAnimation();
+        }, 1500);
+    };
+    
+    img.src = imageUrl;
 }
 
 function createResizedVersion(img, targetWidth, targetHeight) {
@@ -83,77 +74,43 @@ function initializeCanvas(imageUrl, targetWidth, targetHeight) {
         // Set canvas to the target size
         elements.canvas.width = targetWidth;
         elements.canvas.height = targetHeight;
+        elements.lightsOverlayCanvas.width = targetWidth;
+        elements.lightsOverlayCanvas.height = targetHeight;
+        elements.depthOverlayCanvas.width = targetWidth;
+        elements.depthOverlayCanvas.height = targetHeight;
+        elements.lineOverlayCanvas.width = targetWidth;
+        elements.lineOverlayCanvas.height = targetHeight;
         
         // Draw image to canvas at the target size
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
         
-        // Create overlay canvases
-        createDepthMapOverlay();
-        createLineDataOverlay();
-        createLightsOverlay(); // Add this line to create the lights overlay
+        // Initialize overlay canvases
+        initializeDepthMap();
+        initializeLineData();
     };
     
     img.src = imageUrl;
 }
 
-function createLightsOverlay() {
-    // Create lights overlay canvas
-    elements.lightsOverlayCanvas = document.createElement('canvas');
-    elements.lightsOverlayCanvas.width = 1000;
-    elements.lightsOverlayCanvas.height = 1000;
-    elements.lightsOverlayCanvas.className = 'overlay-canvas';
-    elements.lightsOverlayCanvas.id = 'lightsOverlayCanvas';
-    
-    // Add to DOM
-    elements.canvas.parentNode.appendChild(elements.lightsOverlayCanvas);
-    
-    // Store the context for easy access
-    elements.lightsCtx = elements.lightsOverlayCanvas.getContext('2d');
-    
-    // Add event listener to the lights overlay canvas
-    elements.lightsOverlayCanvas.addEventListener('click', handleCanvasClick);
+// Replace createLightsOverlay with a simple function that clears the canvas
+function clearLightsOverlay() {
+    if (elements.lightsCtx) {
+        elements.lightsCtx.clearRect(0, 0, elements.lightsOverlayCanvas.width, elements.lightsOverlayCanvas.height);
+    }
 }
 
-// Add toggle event
-depthToggleBtn.addEventListener('click', toggleDepthMap);
-
-function createDepthMapOverlay() {
-	// Create depth map overlay canvas if it doesn't exist
-	if (!elements.depthOverlayCanvas) {
-		elements.depthOverlayCanvas = document.createElement('canvas');
-		elements.depthOverlayCanvas.width = 1000;
-		elements.depthOverlayCanvas.height = 1000;
-		elements.depthOverlayCanvas.className = 'overlay-canvas hidden';
-		elements.depthOverlayCanvas.id = 'depthOverlayCanvas';
-		
-		// Add to DOM
-		elements.canvas.parentNode.appendChild(elements.depthOverlayCanvas);
-	}
-	
-	// Draw depth map (filler data - all white)
-	const depthCtx = elements.depthOverlayCanvas.getContext('2d');
-	depthCtx.fillStyle = 'white'; // Value of 1
-	depthCtx.fillRect(0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
+// Replace createDepthMapOverlay with a function that just draws the depth map
+function initializeDepthMap() {
+    // Draw depth map (filler data - all white)
+    const depthCtx = elements.depthOverlayCanvas.getContext('2d');
+    depthCtx.fillStyle = 'white'; // Value of 1
+    depthCtx.fillRect(0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
 }
 
-// Add toggle event
-lineToggleBtn.addEventListener('click', toggleLineData);
-
-function createLineDataOverlay() {
-	// Create line data overlay canvas if it doesn't exist
-	if (!elements.lineOverlayCanvas) {
-		elements.lineOverlayCanvas = document.createElement('canvas');
-		elements.lineOverlayCanvas.width = 1000;
-		elements.lineOverlayCanvas.height = 1000;
-		elements.lineOverlayCanvas.className = 'overlay-canvas hidden';
-		elements.lineOverlayCanvas.id = 'lineOverlayCanvas';
-		
-		// Add to DOM
-		elements.canvas.parentNode.appendChild(elements.lineOverlayCanvas);
-	}
-	
-	// Draw line data
-	drawLineData();
+// Replace createLineDataOverlay with a function that just draws the line data
+function initializeLineData() {
+    // Draw line data
+    drawLineData();
 }
 
 function drawLineData() {

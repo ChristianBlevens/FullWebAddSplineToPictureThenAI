@@ -23,21 +23,32 @@ function resetApp() {
 	elements.speedSlider.value = 1.0;
 	elements.glowSizeSlider.value = 1.0;
 	
+	// Reset overlays
+	elements.depthOverlayCanvas.classList.remove('hidden');
+	elements.lineOverlayCanvas.classList.remove('hidden');
+	elements.lightsOverlayCanvas.classList.remove('hidden');
+	
 	// Clear color markers
 	while (elements.colorBar.firstChild) {
 		elements.colorBar.removeChild(elements.colorBar.firstChild);
 	}
 	state.colorMarkers = [];
 	
-	// Remove overlay canvases if they exist
 	if (elements.depthOverlayCanvas) {
-		elements.depthOverlayCanvas.parentNode.removeChild(elements.depthOverlayCanvas);
-		elements.depthOverlayCanvas = null;
+		const depthCtx = elements.depthOverlayCanvas.getContext('2d');
+		depthCtx.clearRect(0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
+		elements.depthOverlayCanvas.classList.add('hidden');
 	}
-	
+
 	if (elements.lineOverlayCanvas) {
-		elements.lineOverlayCanvas.parentNode.removeChild(elements.lineOverlayCanvas);
-		elements.lineOverlayCanvas = null;
+		const lineCtx = elements.lineOverlayCanvas.getContext('2d');
+		lineCtx.clearRect(0, 0, elements.lineOverlayCanvas.width, elements.lineOverlayCanvas.height);
+		elements.lineOverlayCanvas.classList.add('hidden');
+	}
+
+	if (elements.lightsOverlayCanvas) {
+		const lightsCtx = elements.lightsOverlayCanvas.getContext('2d');
+		lightsCtx.clearRect(0, 0, elements.lightsOverlayCanvas.width, elements.lightsOverlayCanvas.height);
 	}
 
 	// Show title and tabs again
@@ -72,6 +83,8 @@ function resetApp() {
 	elements.undoBtn.classList.remove('hidden');
 	elements.clearBtn.classList.remove('hidden');
 	elements.enhanceBtn.classList.remove('hidden');
+	elements.depthToggleBtn.classList.remove('hidden');
+	elements.lineToggleBtn.classList.remove('hidden');
 	elements.downloadBtn.classList.add('hidden');
 	elements.canvas.classList.add('crosshair');
 	elements.instructions.textContent = 'Click to add points for your Christmas lights';
