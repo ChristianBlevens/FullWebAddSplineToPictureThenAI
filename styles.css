@@ -50,6 +50,7 @@ h1 {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
+    flex-shrink: 0;
 }
 
 .density-slider-container {
@@ -236,8 +237,9 @@ h1 {
     border-radius: 8px;
     overflow: hidden;
     position: relative;
-    aspect-ratio: 1/1; /* Square aspect ratio */
-    flex-grow: 1;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 1/1;
 }
 
 .overlay-canvas {
@@ -460,4 +462,33 @@ video {
     0% { width: 0%; }
     50% { width: 70%; }
     100% { width: 100%; }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .editor-container {
+        flex-direction: column;
+    }
+    
+    .control-sidebar {
+        flex-direction: row;
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 15px;
+        justify-content: space-around;
+    }
+    
+    .density-slider-container,
+    .color-bar-container,
+    .speed-slider-container {
+        height: 150px;
+        margin-bottom: 0;
+        margin-right: 5px;
+    }
+    
+    .input-container {
+        max-width: 100%;
+        width: 100%;
+        margin: 0 auto;
+    }
 }

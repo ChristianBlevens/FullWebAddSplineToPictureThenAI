@@ -53,6 +53,8 @@ const elements = {
     // Overlay Canvases (new)
     depthOverlayCanvas: null, // Will be created dynamically
     lineOverlayCanvas: null, // Will be created dynamically
+    lightsOverlayCanvas: null, // Will be created dynamically
+    lightsCtx: null, // Context for the lights overlay canvas
     
     // Control Elements
     densitySlider: document.getElementById('densitySlider'),

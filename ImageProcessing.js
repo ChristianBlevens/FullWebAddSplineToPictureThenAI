@@ -35,6 +35,19 @@ function processImage(imageUrl) {
 			
 			// Start in drawing mode automatically
 			startLightsAnimation();
+			
+			// Scroll down to hide tabs
+			setTimeout(() => {
+				// Scroll down just enough to hide the tabs
+				const tabContainer = document.querySelector('.tab-container');
+				if (tabContainer) {
+					const tabBottom = tabContainer.getBoundingClientRect().bottom;
+					window.scrollTo({
+						top: tabBottom,
+						behavior: 'smooth'
+					});
+				}
+			}, 100);
 		}, 1500);
 	};
 	
@@ -67,6 +80,7 @@ function initializeCanvas(imageUrl, targetWidth, targetHeight) {
 		// Create overlay canvases for depth map and line data
 		createDepthMapOverlay();
 		createLineDataOverlay();
+		createLightsOverlay();
 		
 		// Draw line data on its overlay
 		drawLineData();
@@ -128,6 +142,24 @@ function createLineDataOverlay() {
 	}
 }
 
+function createLightsOverlay() {
+	// Create lights overlay canvas if it doesn't exist
+	if (!elements.lightsOverlayCanvas) {
+		elements.lightsOverlayCanvas = document.createElement('canvas');
+		elements.lightsOverlayCanvas.width = 1000;
+		elements.lightsOverlayCanvas.height = 1000;
+		elements.lightsOverlayCanvas.className = 'overlay-canvas';
+		elements.lightsOverlayCanvas.id = 'lightsOverlayCanvas';
+		elements.lightsOverlayCanvas.style.pointerEvents = 'auto'; // Allow interaction
+		
+		// Add to DOM
+		elements.canvas.parentNode.appendChild(elements.lightsOverlayCanvas);
+		
+		// Set the lightsOverlayCanvas context
+		elements.lightsCtx = elements.lightsOverlayCanvas.getContext('2d');
+	}
+}
+
 function drawLineData() {
 	if (!elements.lineOverlayCanvas || !state.lineData) return;
 	
@@ -170,9 +202,11 @@ function toggleDepthMap() {
 		elements.canvas.classList.add('hidden');
 	}
 	
-	// Make sure line data is always visible
+	// Make sure other overlays stay visible
+	elements.lightsOverlayCanvas.style.zIndex = '10';
+	
 	if (!elements.lineOverlayCanvas.classList.contains('hidden')) {
-		elements.lineOverlayCanvas.style.zIndex = '10';
+		elements.lineOverlayCanvas.style.zIndex = '11';
 	}
 }
 
@@ -185,7 +219,7 @@ function toggleLineData() {
 	} else {
 		// Show line data
 		elements.lineOverlayCanvas.classList.remove('hidden');
-		elements.lineOverlayCanvas.style.zIndex = '10';
+		elements.lineOverlayCanvas.style.zIndex = '11';
 	}
 }
 
