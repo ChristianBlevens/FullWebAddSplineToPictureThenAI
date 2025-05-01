@@ -33,6 +33,9 @@ function processImage(imageUrl) {
 			elements.processingOverlay.classList.add('hidden');
 			state.processing = false;
 			
+			// Setup event listeners on the canvas
+			setupCanvasListeners();
+			
 			// Start in drawing mode automatically
 			startLightsAnimation();
 			
@@ -68,25 +71,40 @@ function createResizedVersion(img, targetWidth, targetHeight) {
 }
 
 function initializeCanvas(imageUrl, targetWidth, targetHeight) {
-	const img = new Image();
-	img.onload = () => {
-		// Set canvas to the target size
-		elements.canvas.width = targetWidth;
-		elements.canvas.height = targetHeight;
-		
-		// Draw image to canvas at the target size
-		ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-		
-		// Create overlay canvases for depth map and line data
-		createDepthMapOverlay();
-		createLineDataOverlay();
-		createLightsOverlay();
-		
-		// Draw line data on its overlay
-		drawLineData();
-	};
-	
-	img.src = imageUrl;
+    const img = new Image();
+    img.onload = () => {
+        // Set canvas to the target size
+        elements.canvas.width = targetWidth;
+        elements.canvas.height = targetHeight;
+        
+        // Draw image to canvas at the target size
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        // Create overlay canvases
+        createDepthMapOverlay();
+        createLineDataOverlay();
+        createLightsOverlay(); // Add this line to create the lights overlay
+    };
+    
+    img.src = imageUrl;
+}
+
+function createLightsOverlay() {
+    // Create lights overlay canvas
+    elements.lightsOverlayCanvas = document.createElement('canvas');
+    elements.lightsOverlayCanvas.width = 1000;
+    elements.lightsOverlayCanvas.height = 1000;
+    elements.lightsOverlayCanvas.className = 'overlay-canvas';
+    elements.lightsOverlayCanvas.id = 'lightsOverlayCanvas';
+    
+    // Add to DOM
+    elements.canvas.parentNode.appendChild(elements.lightsOverlayCanvas);
+    
+    // Store the context for easy access
+    elements.lightsCtx = elements.lightsOverlayCanvas.getContext('2d');
+    
+    // Add event listener to the lights overlay canvas
+    elements.lightsOverlayCanvas.addEventListener('click', handleCanvasClick);
 }
 
 function createDepthMapOverlay() {
@@ -140,24 +158,9 @@ function createLineDataOverlay() {
 		// Add toggle event
 		lineToggleBtn.addEventListener('click', toggleLineData);
 	}
-}
-
-function createLightsOverlay() {
-	// Create lights overlay canvas if it doesn't exist
-	if (!elements.lightsOverlayCanvas) {
-		elements.lightsOverlayCanvas = document.createElement('canvas');
-		elements.lightsOverlayCanvas.width = 1000;
-		elements.lightsOverlayCanvas.height = 1000;
-		elements.lightsOverlayCanvas.className = 'overlay-canvas';
-		elements.lightsOverlayCanvas.id = 'lightsOverlayCanvas';
-		elements.lightsOverlayCanvas.style.pointerEvents = 'auto'; // Allow interaction
-		
-		// Add to DOM
-		elements.canvas.parentNode.appendChild(elements.lightsOverlayCanvas);
-		
-		// Set the lightsOverlayCanvas context
-		elements.lightsCtx = elements.lightsOverlayCanvas.getContext('2d');
-	}
+	
+	// Draw line data
+	drawLineData();
 }
 
 function drawLineData() {
@@ -190,24 +193,15 @@ function drawLineData() {
 }
 
 function toggleDepthMap() {
-	const isVisible = !elements.depthOverlayCanvas.classList.contains('hidden');
-	
-	if (isVisible) {
-		// Hide depth map
-		elements.depthOverlayCanvas.classList.add('hidden');
-		elements.canvas.classList.remove('hidden');
-	} else {
-		// Show depth map
-		elements.depthOverlayCanvas.classList.remove('hidden');
-		elements.canvas.classList.add('hidden');
-	}
-	
-	// Make sure other overlays stay visible
-	elements.lightsOverlayCanvas.style.zIndex = '10';
-	
-	if (!elements.lineOverlayCanvas.classList.contains('hidden')) {
-		elements.lineOverlayCanvas.style.zIndex = '11';
-	}
+    const isVisible = !elements.depthOverlayCanvas.classList.contains('hidden');
+    
+    if (isVisible) {
+        // Hide depth map
+        elements.depthOverlayCanvas.classList.add('hidden');
+    } else {
+        // Show depth map
+        elements.depthOverlayCanvas.classList.remove('hidden');
+    }
 }
 
 function toggleLineData() {
@@ -219,7 +213,6 @@ function toggleLineData() {
 	} else {
 		// Show line data
 		elements.lineOverlayCanvas.classList.remove('hidden');
-		elements.lineOverlayCanvas.style.zIndex = '11';
 	}
 }
 

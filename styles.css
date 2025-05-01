@@ -249,11 +249,29 @@ h1 {
     width: 100%;
     height: 100%;
     z-index: 5;
+}
+
+#lightsOverlayCanvas {
+    z-index: 20;
+    cursor: crosshair;
+    pointer-events: auto;
+}
+
+#depthOverlayCanvas {
+    z-index: 10;
+    pointer-events: none;
+}
+
+#lineOverlayCanvas {
+    z-index: 30;
     pointer-events: none;
 }
 
 .toggle-btn {
     margin-top: 5px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
 }
 
 .button-orange {
@@ -384,7 +402,7 @@ video {
     align-items: center;
     justify-content: center;
     color: white;
-    z-index: 10;
+    z-index: 100;
 }
 
 .crosshair {

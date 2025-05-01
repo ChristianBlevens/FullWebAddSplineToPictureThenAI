@@ -1,4 +1,13 @@
-elements.canvas.addEventListener('click', handleCanvasClick);
+// Add event listener in a safer way that doesn't throw an error
+// The original version tried to add an event listener immediately, but the canvas might not exist yet
+// Instead, we'll attach the event listener after we've verified the canvas exists
+
+function setupCanvasListeners() {
+    // Add click event listener to canvas
+    elements.canvas.addEventListener('click', handleCanvasClick);
+}
+
+// The rest of the file doesn't change the event listener directly
         
 function handleCanvasClick(e) {
 	// If in enhance mode, don't allow further drawing
@@ -102,45 +111,8 @@ function findExistingPoint(x, y) {
 }
 
 function snapToLine(x, y) {
-	// Scale coordinates to match line map dimensions
-	const scaleX = 640 / elements.canvas.width;
-	const scaleY = 480 / elements.canvas.height;
-	
-	const mapX = x * scaleX;
-	const mapY = y * scaleY;
-	
-	// Snap threshold
-	const threshold = 15;
-	
-	// Check horizontal lines
-	for (let lineY = 60; lineY < 480; lineY += 80) {
-		if (Math.abs(mapY - lineY) < threshold) {
-			return { x, y: lineY / scaleY };
-		}
-	}
-	
-	// Check vertical lines
-	for (let lineX = 80; lineX < 640; lineX += 120) {
-		if (Math.abs(mapX - lineX) < threshold) {
-			return { x: lineX / scaleX, y };
-		}
-	}
-	
-	// Check diagonal from top-left to bottom-right
-	const diag1Dist = Math.abs(mapX - mapY);
-	if (diag1Dist < threshold) {
-		const avg = (mapX + mapY) / 2;
-		return { x: avg / scaleX, y: avg / scaleY };
-	}
-	
-	// Check diagonal from top-right to bottom-left
-	const diag2Dist = Math.abs((640 - mapX) - mapY);
-	if (diag2Dist < threshold) {
-		const avgY = (mapY + (640 - mapX)) / 2;
-		return { x: (640 - avgY) / scaleX, y: avgY / scaleY };
-	}
-	
-	// If no line is nearby, return the original point
+	// For the simplified version, don't snap to any grid lines
+	// Just return the original point
 	return { x, y };
 }
 
@@ -151,41 +123,23 @@ function redrawCanvas() {
 		// which will handle showing the lights
 		// The animation is always running when in editor mode
 	} else {
-		// Draw the original image without lights (no valid splines yet)
+		// Draw directly on the main canvas for now
+		// Clear the canvas
+		ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+		
+		// Redraw the original image
 		const img = new Image();
 		img.onload = () => {
-			// Clear canvas and draw the image
-			ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
 			ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
 			
-			// Draw all splines as straight lines
+			// Draw straight lines for any single point splines
 			for (const spline of state.splines) {
-				if (spline.length < 2) {
+				if (spline.length === 1) {
 					// For single points, just draw the point
 					ctx.beginPath();
 					ctx.arc(spline[0].x, spline[0].y, 5, 0, Math.PI * 2);
 					ctx.fillStyle = 'red';
 					ctx.fill();
-				} else {
-					// Draw straight lines between points
-					ctx.beginPath();
-					ctx.moveTo(spline[0].x, spline[0].y);
-					
-					for (let i = 1; i < spline.length; i++) {
-						ctx.lineTo(spline[i].x, spline[i].y);
-					}
-					
-					ctx.strokeStyle = 'yellow';
-					ctx.lineWidth = 2;
-					ctx.stroke();
-					
-					// Draw points
-					for (const point of spline) {
-						ctx.beginPath();
-						ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-						ctx.fillStyle = 'red';
-						ctx.fill();
-					}
 				}
 			}
 			
@@ -201,7 +155,6 @@ function redrawCanvas() {
 				ctx.stroke();
 			}
 		};
-		
 		img.src = state.fullResImage;
 	}
 }

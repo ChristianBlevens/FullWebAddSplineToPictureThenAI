@@ -10,101 +10,104 @@ function startLightsAnimation() {
 		const animate = () => {
 			if (!state.animatingLights) return;
 			
-			// Clear the lights overlay canvas
-			elements.lightsCtx.clearRect(0, 0, elements.lightsOverlayCanvas.width, elements.lightsOverlayCanvas.height);
-			
-			// Only draw splines if we're not in enhance mode
-			// This is for the editing view only, not for the final image
-			if (!state.inEnhanceMode) {
-				// Draw all splines with points for editing
-				for (const spline of state.splines) {
-					// Draw straight lines between points
-					if (spline.length >= 2) {
-						elements.lightsCtx.beginPath();
-						elements.lightsCtx.moveTo(spline[0].x, spline[0].y);
-						
-						for (let i = 1; i < spline.length; i++) {
-							elements.lightsCtx.lineTo(spline[i].x, spline[i].y);
+			// Draw the lights directly on the main canvas
+			if (elements.lightsCtx) {
+				// Clear the lights overlay
+				elements.lightsCtx.clearRect(0, 0, elements.lightsOverlayCanvas.width, elements.lightsOverlayCanvas.height);
+				
+				// Only draw splines if we're not in enhance mode
+				// This is for the editing view only, not for the final image
+				if (!state.inEnhanceMode) {
+					// Draw all splines with points for editing
+					for (const spline of state.splines) {
+						// Draw straight lines between points
+						if (spline.length >= 2) {
+							elements.lightsCtx.beginPath();
+							elements.lightsCtx.moveTo(spline[0].x, spline[0].y);
+							
+							for (let i = 1; i < spline.length; i++) {
+								elements.lightsCtx.lineTo(spline[i].x, spline[i].y);
+							}
+							
+							elements.lightsCtx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+							elements.lightsCtx.lineWidth = 1;
+							elements.lightsCtx.stroke();
 						}
-						
-						elements.lightsCtx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
-						elements.lightsCtx.lineWidth = 1;
-						elements.lightsCtx.stroke();
 					}
 				}
-			}
-			
-			// Draw lights for each spline
-			for (const spline of state.splines) {
-				if (spline.length < 2) {
-					// For splines with only one point, just draw the point if not in enhance mode
-					if (spline.length === 1 && !state.inEnhanceMode) {
-						elements.lightsCtx.beginPath();
-						elements.lightsCtx.arc(spline[0].x, spline[0].y, 5, 0, Math.PI * 2);
-						elements.lightsCtx.fillStyle = 'red';
-						elements.lightsCtx.fill();
-					}
-					continue;
-				}
 				
-				// Calculate evenly spaced points along the spline, adjusted for depth
-				const lightPoints = calculateDepthAdjustedLightPoints(spline);
-				
-				// Draw each light
-				lightPoints.forEach((point, i) => {
-					// Color based on position in the animation sequence
-					const colorPosition = (i / lightPoints.length + phase) % 1;
-					const color = getColorFromMarkers(colorPosition);
-					
-					// Draw light with depth-based size
-					const depth = getDepthAtPoint(point.x, point.y);
-					const size = 3 + (depth * 7); // Size between 3-10px
-					
-					elements.lightsCtx.beginPath();
-					elements.lightsCtx.arc(point.x, point.y, size, 0, Math.PI * 2);
-					elements.lightsCtx.fillStyle = color;
-					elements.lightsCtx.fill();
-					
-					// Add glow effect
-					const gradient = elements.lightsCtx.createRadialGradient(
-						point.x, point.y, 0,
-						point.x, point.y, size * 2
-					);
-					gradient.addColorStop(0, color);
-					gradient.addColorStop(1, 'rgba(0,0,0,0)');
-					
-					elements.lightsCtx.beginPath();
-					elements.lightsCtx.arc(point.x, point.y, size * 2, 0, Math.PI * 2);
-					elements.lightsCtx.fillStyle = gradient;
-					elements.lightsCtx.fill();
-				});
-			}
-			
-			// Draw control points on top of lights only if not in enhance mode
-			if (!state.inEnhanceMode) {
+				// Draw lights for each spline
 				for (const spline of state.splines) {
-					// Draw points
-					for (const point of spline) {
-						elements.lightsCtx.beginPath();
-						elements.lightsCtx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-						elements.lightsCtx.fillStyle = 'red';
-						elements.lightsCtx.fill();
-						elements.lightsCtx.strokeStyle = 'white';
-						elements.lightsCtx.lineWidth = 1;
-						elements.lightsCtx.stroke();
+					if (spline.length < 2) {
+						// For splines with only one point, just draw the point if not in enhance mode
+						if (spline.length === 1 && !state.inEnhanceMode) {
+							elements.lightsCtx.beginPath();
+							elements.lightsCtx.arc(spline[0].x, spline[0].y, 5, 0, Math.PI * 2);
+							elements.lightsCtx.fillStyle = 'red';
+							elements.lightsCtx.fill();
+						}
+						continue;
 					}
+					
+					// Calculate evenly spaced points along the spline, adjusted for depth
+					const lightPoints = calculateDepthAdjustedLightPoints(spline);
+					
+					// Draw each light
+					lightPoints.forEach((point, i) => {
+						// Color based on position in the animation sequence
+						const colorPosition = (i / lightPoints.length + phase) % 1;
+						const color = getColorFromMarkers(colorPosition);
+						
+						// Draw light with depth-based size
+						const depth = getDepthAtPoint(point.x, point.y);
+						const size = 3 + (depth * 7); // Size between 3-10px
+						
+						elements.lightsCtx.beginPath();
+						elements.lightsCtx.arc(point.x, point.y, size, 0, Math.PI * 2);
+						elements.lightsCtx.fillStyle = color;
+						elements.lightsCtx.fill();
+						
+						// Add glow effect
+						const gradient = elements.lightsCtx.createRadialGradient(
+							point.x, point.y, 0,
+							point.x, point.y, size * 2
+						);
+						gradient.addColorStop(0, color);
+						gradient.addColorStop(1, 'rgba(0,0,0,0)');
+						
+						elements.lightsCtx.beginPath();
+						elements.lightsCtx.arc(point.x, point.y, size * 2, 0, Math.PI * 2);
+						elements.lightsCtx.fillStyle = gradient;
+						elements.lightsCtx.fill();
+					});
 				}
 				
-				// Highlight the last clicked point if any
-				if (state.lastClickedPoint) {
-					const { splineIndex, pointIndex } = state.lastClickedPoint;
-					const point = state.splines[splineIndex][pointIndex];
+				// Draw control points on top of lights only if not in enhance mode
+				if (!state.inEnhanceMode) {
+					for (const spline of state.splines) {
+						// Draw points
+						for (const point of spline) {
+							elements.lightsCtx.beginPath();
+							elements.lightsCtx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+							elements.lightsCtx.fillStyle = 'red';
+							elements.lightsCtx.fill();
+							elements.lightsCtx.strokeStyle = 'white';
+							elements.lightsCtx.lineWidth = 1;
+							elements.lightsCtx.stroke();
+						}
+					}
 					
-					elements.lightsCtx.beginPath();
-					elements.lightsCtx.arc(point.x, point.y, 7, 0, Math.PI * 2);
-					elements.lightsCtx.strokeStyle = '#00ffff';
-					elements.lightsCtx.lineWidth = 2;
-					elements.lightsCtx.stroke();
+					// Highlight the last clicked point if any
+					if (state.lastClickedPoint) {
+						const { splineIndex, pointIndex } = state.lastClickedPoint;
+						const point = state.splines[splineIndex][pointIndex];
+						
+						elements.lightsCtx.beginPath();
+						elements.lightsCtx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+						elements.lightsCtx.strokeStyle = '#00ffff';
+						elements.lightsCtx.lineWidth = 2;
+						elements.lightsCtx.stroke();
+					}
 				}
 			}
 			
@@ -214,8 +217,8 @@ function calculateDepthAdjustedLightPoints(spline) {
 function getDepthAtPoint(x, y) {
 	// Convert canvas coordinates to depth map coordinates
 	// Scale from 1000x1000 to 400x400
-	const depthX = Math.floor((x / elements.lightsOverlayCanvas.width) * 400);
-	const depthY = Math.floor((y / elements.lightsOverlayCanvas.height) * 400);
+	const depthX = Math.floor((x / elements.canvas.width) * 400);
+	const depthY = Math.floor((y / elements.canvas.height) * 400);
 	
 	// For the filler depth map, all values are 1
 	return 1;

@@ -73,10 +73,7 @@ function applyEnhancements() {
 			
 			// Draw the enhanced image on the main canvas
 			ctx.drawImage(displayImg, 0, 0, elements.canvas.width, elements.canvas.height);
-			
-			// Hide maps
-			elements.mapsContainer.classList.add('hidden');
-			
+
 			// Update instructions
 			elements.instructions.textContent = 'Your enhanced image is ready!';
 			
