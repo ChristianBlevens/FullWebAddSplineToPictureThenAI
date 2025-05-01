@@ -119,10 +119,10 @@ function createDepthMapOverlay() {
 		// Add to DOM
 		elements.canvas.parentNode.appendChild(elements.depthOverlayCanvas);
 		
-		// Create depth toggle button
+		// Create depth toggle button in the main button container instead
 		const depthToggleBtn = document.createElement('button');
 		depthToggleBtn.id = 'depthToggleBtn';
-		depthToggleBtn.className = 'button button-blue toggle-btn';
+		depthToggleBtn.className = 'button button-blue';
 		depthToggleBtn.textContent = 'Toggle Depth Map';
 		elements.editorButtons.appendChild(depthToggleBtn);
 		
@@ -148,10 +148,10 @@ function createLineDataOverlay() {
 		// Add to DOM
 		elements.canvas.parentNode.appendChild(elements.lineOverlayCanvas);
 		
-		// Create line toggle button
+		// Create line toggle button in the main button container
 		const lineToggleBtn = document.createElement('button');
 		lineToggleBtn.id = 'lineToggleBtn';
-		lineToggleBtn.className = 'button button-orange toggle-btn';
+		lineToggleBtn.className = 'button button-orange';
 		lineToggleBtn.textContent = 'Toggle Line Data';
 		elements.editorButtons.appendChild(lineToggleBtn);
 		
