@@ -11,7 +11,7 @@ function resetApp() {
 	state.fullResImage = null;
 	state.lowResImage = null;
 	state.depthMap = null;
-	state.lineMap = null;
+	state.lineData = null; // Changed from lineMap
 	state.enhancedImage = null;
 	state.inEnhanceMode = false;
 	state.densityFactor = 1.0;
@@ -26,6 +26,28 @@ function resetApp() {
 		elements.colorBar.removeChild(elements.colorBar.firstChild);
 	}
 	state.colorMarkers = [];
+	
+	// Remove overlay canvases if they exist
+	if (elements.depthOverlayCanvas) {
+		elements.depthOverlayCanvas.parentNode.removeChild(elements.depthOverlayCanvas);
+		elements.depthOverlayCanvas = null;
+	}
+	
+	if (elements.lineOverlayCanvas) {
+		elements.lineOverlayCanvas.parentNode.removeChild(elements.lineOverlayCanvas);
+		elements.lineOverlayCanvas = null;
+	}
+	
+	// Remove toggle buttons if they exist
+	const depthToggleBtn = document.getElementById('depthToggleBtn');
+	if (depthToggleBtn) {
+		depthToggleBtn.parentNode.removeChild(depthToggleBtn);
+	}
+	
+	const lineToggleBtn = document.getElementById('lineToggleBtn');
+	if (lineToggleBtn) {
+		lineToggleBtn.parentNode.removeChild(lineToggleBtn);
+	}
 	
 	// Reset UI based on current mode
 	if (state.mode === 'camera') {
@@ -55,7 +77,6 @@ function resetApp() {
 	elements.downloadBtn.classList.add('hidden');
 	elements.canvas.classList.add('crosshair');
 	elements.instructions.textContent = 'Click to add points for your Christmas lights';
-	elements.mapsContainer.classList.add('hidden');
 	elements.resultsContainer.classList.add('hidden');
 	
 	// Reset button states

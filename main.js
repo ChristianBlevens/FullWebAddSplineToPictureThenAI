@@ -5,9 +5,9 @@ const state = {
     splines: [], // Array of splines, each spline is array of points [{x,y}, {x,y}]
     activeSplineIndex: -1, // Index of current active spline
     fullResImage: null, // Original full resolution image
-    lowResImage: null, // Resized image for processing
+    lowResImage: null, // Resized image for processing (400x400)
     depthMap: null,
-    lineMap: null,
+    lineData: null, // Changed from lineMap to lineData for clarity
     animatingLights: true, // Always animating lights
     animationId: null,
     processing: false,
@@ -50,7 +50,11 @@ const elements = {
     processingOverlay: document.getElementById('processingOverlay'),
     instructions: document.getElementById('instructions'),
     
-    // New Control Elements
+    // Overlay Canvases (new)
+    depthOverlayCanvas: null, // Will be created dynamically
+    lineOverlayCanvas: null, // Will be created dynamically
+    
+    // Control Elements
     densitySlider: document.getElementById('densitySlider'),
     colorBar: document.getElementById('colorBar'),
     colorPickerOverlay: document.getElementById('colorPickerOverlay'),
@@ -58,11 +62,6 @@ const elements = {
     selectColorBtn: document.getElementById('selectColorBtn'),
     cancelColorBtn: document.getElementById('cancelColorBtn'),
     speedSlider: document.getElementById('speedSlider'),
-    
-    // Maps
-    mapsContainer: document.getElementById('mapsContainer'),
-    depthMapImage: document.getElementById('depthMapImage'),
-    lineMapImage: document.getElementById('lineMapImage'),
     
     // Results
     enhancedImage: document.getElementById('enhancedImage'),
@@ -72,7 +71,8 @@ const elements = {
     clearBtn: document.getElementById('clearBtn'),
     enhanceBtn: document.getElementById('enhanceBtn'),
     downloadBtn: document.getElementById('downloadBtn'),
-    resetBtn: document.getElementById('resetBtn')
+    resetBtn: document.getElementById('resetBtn'),
+    editorButtons: document.getElementById('editorButtons')
 };
 
 // Initialize canvas context

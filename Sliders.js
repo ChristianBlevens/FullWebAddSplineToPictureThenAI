@@ -6,4 +6,6 @@ elements.densitySlider.addEventListener('input', function() {
 	}
 });
 
-print(test);
+elements.speedSlider.addEventListener('input', function() {
+	state.animationSpeed = parseFloat(this.value);
+});

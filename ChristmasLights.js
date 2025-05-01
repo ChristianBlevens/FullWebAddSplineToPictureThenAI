@@ -213,29 +213,10 @@ function calculateDepthAdjustedLightPoints(spline) {
 
 function getDepthAtPoint(x, y) {
 	// Convert canvas coordinates to depth map coordinates
-	const depthX = Math.floor((x / elements.canvas.width) * 640);
-	const depthY = Math.floor((y / elements.canvas.height) * 480);
+	// Scale from 1000x1000 to 400x400
+	const depthX = Math.floor((x / elements.canvas.width) * 400);
+	const depthY = Math.floor((y / elements.canvas.height) * 400);
 	
-	// In a real implementation, this would sample the actual depth map
-	// For this demo, we create a more dynamic depth map with various patterns
-	
-	// Base depth from Y position (higher = further)
-	let depth = depthY / 480;
-	
-	// Add horizontal bands of varying depth
-	const bandDepth = 0.2 * Math.sin(depthY / 30);
-	
-	// Add some vertical variation
-	const verticalVariation = 0.1 * Math.sin(depthX / 40);
-	
-	// Add diagonal variation
-	const diagonalVariation = 0.15 * Math.sin((depthX + depthY) / 50);
-	
-	// Combine all variations
-	depth = depth + bandDepth + verticalVariation + diagonalVariation;
-	
-	// Normalize to 0-1 range
-	depth = Math.max(0, Math.min(1, depth));
-	
-	return depth;
+	// For the filler depth map, all values are 1
+	return 1;
 }
