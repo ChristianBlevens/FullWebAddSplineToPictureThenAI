@@ -19,6 +19,7 @@ const state = {
     activeColorMarkerIndex: -1, // For color picker (new)
     colorPickerPosition: null, // For positioning the color picker (new)
     animationSpeed: 1.0, // Default animation speed (new)
+	cycleLength: 10, // Default number of lights before color cycle resets
     glowSizeFactor: 1.0 // Default glow size factor for light glow effects
 };
 

@@ -17,3 +17,28 @@ elements.glowSizeSlider.addEventListener('input', function() {
 		redrawCanvas();
 	}
 });
+
+// Add this to each slider
+elements.densitySlider.addEventListener('touchstart', function() {
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+});
+
+elements.densitySlider.addEventListener('touchend', function() {
+    document.body.style.overflow = ''; // Enable scrolling
+});
+
+elements.speedSlider.addEventListener('touchstart', function() {
+    document.body.style.overflow = 'hidden';
+});
+
+elements.speedSlider.addEventListener('touchend', function() {
+    document.body.style.overflow = '';
+});
+
+elements.glowSizeSlider.addEventListener('touchstart', function() {
+    document.body.style.overflow = 'hidden';
+});
+
+elements.glowSizeSlider.addEventListener('touchend', function() {
+    document.body.style.overflow = '';
+});

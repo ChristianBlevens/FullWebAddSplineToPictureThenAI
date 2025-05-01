@@ -55,7 +55,7 @@ function startLightsAnimation() {
 					// Draw each light
 					lightPoints.forEach((point, i) => {
 						// Color based on position in the animation sequence
-						const colorPosition = (i / lightPoints.length + phase) % 1;
+						const colorPosition = i + phase % state.cycleLength;
 						const color = getColorFromMarkers(colorPosition);
 						
 						// Draw light with depth-based size

@@ -160,49 +160,49 @@ function updateColorMarker(index, color) {
 
 // Get color based on position in the animation sequence and transition speed
 function getColorFromMarkers(position) {
-	// Position is 0-1 value representing where in the animation sequence we are
-	
-	// If no markers, use default colors
-	if (state.colorMarkers.length === 0) {
-		const defaultColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
-		return defaultColors[Math.floor(position * defaultColors.length) % defaultColors.length];
-	}
-	
-	// If only one marker, use that color
-	if (state.colorMarkers.length === 1) {
-		return state.colorMarkers[0].color;
-	}
-	
-	// The animation speed will affect how quickly we move through the color range
-	// Low speed = slower transitions = smaller effective position difference between markers
-	// High speed = faster transitions = larger effective position difference between markers
-	
-	// Position is 0-1, but markers are stored as percentages (0-100)
-	// Use animation speed to modify how we traverse the position space
-	const targetPosition = (position * 100) % 100;
-	
-	// Find markers that bound this position
-	let lowerMarker = state.colorMarkers[0];
-	let upperMarker = state.colorMarkers[state.colorMarkers.length - 1];
-	
-	for (let i = 0; i < state.colorMarkers.length - 1; i++) {
-		if (state.colorMarkers[i].y <= targetPosition && state.colorMarkers[i + 1].y >= targetPosition) {
-			lowerMarker = state.colorMarkers[i];
-			upperMarker = state.colorMarkers[i + 1];
-			break;
-		}
-	}
-	
-	// If position is outside the range of markers, use the closest marker
-	if (targetPosition <= lowerMarker.y) return lowerMarker.color;
-	if (targetPosition >= upperMarker.y) return upperMarker.color;
-	
-	// Calculate interpolation factor between markers
-	const range = upperMarker.y - lowerMarker.y;
-	let factor = (targetPosition - lowerMarker.y) / range;
-	
-	// Interpolate colors (simple RGB interpolation)
-	return interpolateColors(lowerMarker.color, upperMarker.color, factor);
+    // Position is uncapped value representing where in the animation sequence we are
+    
+    // If no markers, use default colors
+    if (state.colorMarkers.length === 0) {
+        const defaultColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'];
+        return defaultColors[Math.floor(position * defaultColors.length) % defaultColors.length];
+    }
+    
+    // If only one marker, use that color
+    if (state.colorMarkers.length === 1) {
+        return state.colorMarkers[0].color;
+    }
+    
+    // Apply cycle length to the position
+    // This makes the colors reset after a certain number of lights
+    // We use modulo to wrap around the position within the cycle length
+    const cyclePosition = position / state.cycleLength;
+    
+    // Position is 0-1, but markers are stored as percentages (0-100)
+    const targetPosition = (cyclePosition * 100) % 100;
+    
+    // Find markers that bound this position
+    let lowerMarker = state.colorMarkers[0];
+    let upperMarker = state.colorMarkers[state.colorMarkers.length - 1];
+    
+    for (let i = 0; i < state.colorMarkers.length - 1; i++) {
+        if (state.colorMarkers[i].y <= targetPosition && state.colorMarkers[i + 1].y >= targetPosition) {
+            lowerMarker = state.colorMarkers[i];
+            upperMarker = state.colorMarkers[i + 1];
+            break;
+        }
+    }
+    
+    // If position is outside the range of markers, use the closest marker
+    if (targetPosition <= lowerMarker.y) return lowerMarker.color;
+    if (targetPosition >= upperMarker.y) return upperMarker.color;
+    
+    // Calculate interpolation factor between markers
+    const range = upperMarker.y - lowerMarker.y;
+    let factor = (targetPosition - lowerMarker.y) / range;
+    
+    // Interpolate colors (simple RGB interpolation)
+    return interpolateColors(lowerMarker.color, upperMarker.color, factor);
 }
 
 // Helper function to interpolate between two colors
