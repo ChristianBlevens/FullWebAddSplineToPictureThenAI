@@ -228,6 +228,18 @@ function getDepthAtPoint(x, y) {
 	const depthX = Math.floor((x / elements.canvas.width) * 400);
 	const depthY = Math.floor((y / elements.canvas.height) * 400);
 	
-	// For the filler depth map, all values are 1
+	// If we have actual depth data from server
+	if (state.depthMap && state.depthMap.depth && Array.isArray(state.depthMap.depth)) {
+        // Make sure coordinates are within bounds
+        if (depthX >= 0 && depthX < 400 && depthY >= 0 && depthY < 400) {
+            // Get depth value from array (assuming row-major order)
+            const index = depthY * 400 + depthX;
+            if (index >= 0 && index < state.depthMap.depth.length) {
+                return state.depthMap.depth[index];
+            }
+        }
+    }
+	
+	// Fallback to default depth (1)
 	return 1;
 }
