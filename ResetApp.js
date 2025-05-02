@@ -1,6 +1,7 @@
 elements.resetBtn.addEventListener('click', resetApp);
         
 function resetApp() {
+	/*
 	// Stop animations if running
 	stopLightsAnimation();
 	
@@ -97,6 +98,9 @@ function resetApp() {
 	elements.undoBtn.disabled = true;
 	elements.clearBtn.disabled = true;
 	elements.enhanceBtn.disabled = true;
+	*/
+	// Reset logic seems sort of overkill so this will work for now, especially since the page should be cached
+	window.location.reload();
 }
 
 // Initialize the app by setting up the color picker cancel button
