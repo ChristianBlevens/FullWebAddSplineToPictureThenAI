@@ -1,6 +1,6 @@
 elements.cameraTab.addEventListener('click', () => {
 	if (state.mode === 'camera') return;
-	resetApp();
+	//resetApp();
 	state.mode = 'camera';
 	elements.cameraTab.classList.add('active');
 	elements.fileTab.classList.remove('active');
@@ -10,7 +10,7 @@ elements.cameraTab.addEventListener('click', () => {
 
 elements.fileTab.addEventListener('click', () => {
 	if (state.mode === 'file') return;
-	resetApp();
+	//resetApp();
 	// Stop camera if active
 	stopCamera();
 	
