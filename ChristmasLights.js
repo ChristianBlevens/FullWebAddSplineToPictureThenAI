@@ -54,50 +54,73 @@ function startLightsAnimation() {
 					
 					// Draw each light
 					lightPoints.forEach((point, i) => {
-						// Color based on position in the animation sequence
-						const colorPosition = i + phase % state.cycleLength;
+						// Improved color calculation with proper modulo operation
+						const colorPosition = (i + phase) % state.cycleLength;
 						const color = getColorFromMarkers(colorPosition);
 						
-						// Draw light with depth-based size
+						// Enhanced depth calculation
 						const depth = getDepthAtPoint(point.x, point.y);
-						const size = 1 + (depth * 5); // Size between 1-6px
+						// Slightly larger base size for better visibility
+						const size = 1.2 + (depth * 5.5); // Size between 1.2-6.7px
 						
+						// Enable lighter composite operation for better blending
+						elements.lightsCtx.globalCompositeOperation = 'lighter';
+						
+						// Draw light core
 						elements.lightsCtx.beginPath();
 						elements.lightsCtx.arc(point.x, point.y, size, 0, Math.PI * 2);
 						elements.lightsCtx.fillStyle = color;
 						elements.lightsCtx.fill();
 						
-						// Add glow effect
+						// Add optional tiny bright center for more intensity
+						elements.lightsCtx.beginPath();
+						elements.lightsCtx.arc(point.x, point.y, size * 0.4, 0, Math.PI * 2);
+						elements.lightsCtx.fillStyle = '#ffffff';
+						elements.lightsCtx.globalAlpha = 0.7;
+						elements.lightsCtx.fill();
+						elements.lightsCtx.globalAlpha = 1.0;
+						
+						// Add glow effect with improved color extraction
 						// Extract RGB components from the color
 						const r = parseInt(color.substring(1, 3), 16);
 						const g = parseInt(color.substring(3, 5), 16);
 						const b = parseInt(color.substring(5, 7), 16);
 						
-						// Create radial gradient with same color as the light but with decreasing opacity
-						const glowSize = (size + (40 * state.glowSizeFactor)) * depth; // Adjust glow size based on slider
-						const baseAlpha = 0.9; // Adjust base transparency (0-1)
+						// Create enhanced radial gradient with better size calculation
+						const glowSize = (size + (45 * state.glowSizeFactor)) * depth; // Larger glow
+						const baseAlpha = 0.85; // Slightly reduced base transparency for softer glow
 						const gradient = elements.lightsCtx.createRadialGradient(
 							point.x, point.y, 0,
 							point.x, point.y, glowSize
 						);
 						
-						// The exponent value controls how quickly the fade happens (higher = faster fade)
-						const exponent = 4; // Adjust this value to control fade speed (2-4 for exponential)
-						const stepCount = 20; // How smooth the gradient is
-
-						// Add many more color stops for smoother transition
+						// Better fade control
+						const exponent = 3.5; // Slightly reduced for wider glow
+						const stepCount = 24; // More color stops for smoother transition
+						
+						// Add color stops with improved distribution
 						for (let i = 0; i <= stepCount; i++) {
 							const position = i / stepCount;
-							// Use exponential function for opacity calculation
-							// This creates a true exponential curve
+							// Enhanced opacity calculation for better light falloff
 							const opacity = baseAlpha * Math.pow(1 - position, exponent);
-							gradient.addColorStop(position, `rgba(${r}, ${g}, ${b}, ${opacity})`);
+							
+							// Add subtle color shift toward blue for distant lights (atmospheric effect)
+							const shift = 0.1 * position;
+							const shiftedR = Math.max(0, r * (1 - shift));
+							const shiftedG = Math.max(0, g * (1 - shift * 0.5));
+							const shiftedB = Math.min(255, b * (1 + shift * 0.2));
+							
+							gradient.addColorStop(position, `rgba(${shiftedR}, ${shiftedG}, ${shiftedB}, ${opacity})`);
 						}
 						
+						// Draw improved glow
 						elements.lightsCtx.beginPath();
 						elements.lightsCtx.arc(point.x, point.y, glowSize, 0, Math.PI * 2);
 						elements.lightsCtx.fillStyle = gradient;
 						elements.lightsCtx.fill();
+						
+						// Reset composite operation at the end of each light
+						elements.lightsCtx.globalCompositeOperation = 'source-over';
 					});
 				}
 				
