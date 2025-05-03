@@ -66,7 +66,7 @@ function applyEnhancements() {
     // Set a timeout to handle potential long delays
     const timeoutDuration = 30000; // 30 seconds timeout
     let timeoutId = setTimeout(() => {
-        console.error('API request timed out');
+        //console.error('API request timed out');
         handleEnhancementFailure('Request timed out. You can still download the non-enhanced image.');
     }, timeoutDuration);
     
@@ -107,7 +107,7 @@ function applyEnhancements() {
             // Clear the timeout since we got a response (even if it's an error)
             clearTimeout(timeoutId);
             
-            console.error('AI enhancement failed:', error);
+            //console.error('AI enhancement failed:', error);
             handleEnhancementFailure('AI enhancement failed. You can still download the non-enhanced image.');
         });
 }

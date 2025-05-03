@@ -57,7 +57,7 @@ function processImage(imageUrl) {
             // Start in drawing mode automatically
             startLightsAnimation();
         } catch (error) {
-            console.error('Error processing image:', error);
+            //console.error('Error processing image:', error);
             
             // Fallback to placeholder data if servers fail
             state.depthMap = createFillerDepthMap();

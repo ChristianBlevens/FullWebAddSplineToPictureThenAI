@@ -20,7 +20,7 @@ async function startCamera() {
 		await elements.video.play();
 		
 	} catch (err) {
-		console.error('Camera error:', err);
+		//console.error('Camera error:', err);
 		alert('Could not access camera: ' + err.message);
 	}
 }

@@ -19,7 +19,7 @@ function setupCanvasListeners() {
     elements.canvas.removeEventListener('click', handleCanvasClick);
     elements.lightsOverlayCanvas.removeEventListener('click', handleCanvasClick);
     
-    console.log('Canvas event listeners set up');
+    //console.log('Canvas event listeners set up');
 }
 
 // Variables to track interaction timing
@@ -30,7 +30,7 @@ let interactionStartPoint = null;
 function handleInteractionStart(e) {
     if (state.inEnhanceMode) return;
     
-    console.log('Interaction start detected');
+    //console.log('Interaction start detected');
     
     // Determine if this is a touch or mouse event and extract position
     let x, y;
@@ -58,14 +58,14 @@ function handleInteractionStart(e) {
     // Record start time and position
     interactionStartTime = Date.now();
     interactionStartPoint = { x, y };
-    console.log(`Interaction started at (${x}, ${y})`);
+    //console.log(`Interaction started at (${x}, ${y})`);
 }
 
 // Unified handler for interaction end (mouseup or touchend)
 function handleInteractionEnd(e) {
     if (state.inEnhanceMode || !interactionStartPoint) return;
     
-    console.log('Interaction end detected');
+    //console.log('Interaction end detected');
     
     // Determine if this is a touch or mouse event and extract position
     let x, y;
@@ -93,7 +93,7 @@ function handleInteractionEnd(e) {
     // Calculate interaction duration
     const interactionDuration = Date.now() - interactionStartTime;
     
-    console.log(`Interaction ended at (${x}, ${y}), duration: ${interactionDuration}ms`);
+    //console.log(`Interaction ended at (${x}, ${y}), duration: ${interactionDuration}ms`);
     
     // Process the interaction
     processCanvasInteraction(x, y, interactionDuration);
@@ -105,11 +105,16 @@ function handleInteractionEnd(e) {
 
 // Process canvas interaction
 function processCanvasInteraction(x, y, duration) {
-    console.log(`Processing interaction at (${x}, ${y}), duration: ${duration}ms`);
+    //console.log(`Processing interaction at (${x}, ${y}), duration: ${duration}ms`);
     
+	const shouldSnap = duration < 250;
+	
+	var existingPointInfo = null;
+	
     // Find any existing point at this location
-    // We'll pass this to handlePointPlacement to avoid duplicate checks
-    const existingPointInfo = findExistingPoint(x, y);
+	if (shouldSnap) {
+		existingPointInfo = findExistingPoint(x, y);
+	}
     
     // Determine if and how to snap the point
     let finalPoint;
@@ -121,11 +126,8 @@ function processCanvasInteraction(x, y, duration) {
             x: state.splines[splineIndex][pointIndex].x, 
             y: state.splines[splineIndex][pointIndex].y 
         };
-        console.log(`Found existing point at (${finalPoint.x}, ${finalPoint.y}), prioritizing over line snapping`);
+        //console.log(`Found existing point at (${finalPoint.x}, ${finalPoint.y}), prioritizing over line snapping`);
     } else {
-        // No existing point - check if we should snap to a line
-        const shouldSnap = duration < 500; // Less than half a second
-        
         if (shouldSnap) {
             finalPoint = snapToLine(x, y);
             
@@ -160,7 +162,7 @@ function processCanvasInteraction(x, y, duration) {
                 }, 1000);
             }
         } else {
-            console.log("Interaction too long, not snapping");
+            //console.log("Interaction too long, not snapping");
             finalPoint = { x, y };
         }
     }
@@ -239,7 +241,7 @@ function handlePointPlacement(point, existingPointInfo = null) {
 // Keep this function for backward compatibility
 // This will be called by any existing event listeners from other files
 function handleCanvasClick(e) {
-    console.log('Legacy handleCanvasClick called');
+    //console.log('Legacy handleCanvasClick called');
     // Convert click to our new interaction model
     handleInteractionStart(e);
     // Simulate immediate end of interaction
@@ -270,7 +272,7 @@ function findExistingPoint(x, y) {
 // Updated function to more accurately snap to lines in the line data
 function snapToLine(x, y) {
     if (!state.lineData || !state.lineData.lines || !Array.isArray(state.lineData.lines)) {
-        console.log("No line data available for snapping");
+        //console.log("No line data available for snapping");
         return { x, y }; // Return original point if no line data available
     }
     
@@ -286,8 +288,8 @@ function snapToLine(x, y) {
     let closestPoint = { x, y };
     
     // For debugging
-    console.log(`Checking snap point (${x}, ${y})`);
-    console.log(`Line data has ${state.lineData.lines.length} lines`);
+    //console.log(`Checking snap point (${x}, ${y})`);
+    //console.log(`Line data has ${state.lineData.lines.length} lines`);
     
     // Distance threshold - exactly 20 pixels
     const SNAP_THRESHOLD = 20;
@@ -332,23 +334,23 @@ function snapToLine(x, y) {
         const distance = Math.sqrt((x - closestX) * (x - closestX) + (y - closestY) * (y - closestY));
         
         // Debug log for this line
-        console.log(`Line ${i}: (${x1},${y1}) to (${x2},${y2}), distance: ${distance.toFixed(2)}`);
+        //console.log(`Line ${i}: (${x1},${y1}) to (${x2},${y2}), distance: ${distance.toFixed(2)}`);
         
         // If the distance is within our threshold and it's closer than any previous match
         if (distance <= SNAP_THRESHOLD && distance < closestDistance) {
             closestDistance = distance;
             closestPoint = { x: closestX, y: closestY };
-            console.log(`New closest point: (${closestX.toFixed(2)}, ${closestY.toFixed(2)}), distance: ${distance.toFixed(2)}`);
+            //console.log(`New closest point: (${closestX.toFixed(2)}, ${closestY.toFixed(2)}), distance: ${distance.toFixed(2)}`);
         }
     }
     
     // If we didn't snap, log that information
     if (closestDistance === Infinity) {
-        console.log("No lines within snapping threshold");
+        //console.log("No lines within snapping threshold");
         return { x, y };
     }
     
-    console.log(`Final snap result: point (${x}, ${y}) → (${closestPoint.x.toFixed(2)}, ${closestPoint.y.toFixed(2)}), distance: ${closestDistance.toFixed(2)}`);
+    //console.log(`Final snap result: point (${x}, ${y}) → (${closestPoint.x.toFixed(2)}, ${closestPoint.y.toFixed(2)}), distance: ${closestDistance.toFixed(2)}`);
     return closestPoint;
 }
 
