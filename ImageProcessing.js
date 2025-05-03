@@ -184,44 +184,37 @@ function clearLightsOverlay() {
 function initializeDepthMap() {
     const depthCtx = elements.depthOverlayCanvas.getContext('2d');
     depthCtx.clearRect(0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
-    
-    if (state.depthMap && state.depthMap.depth) {
-        // If we have depth data from server (pixels array)
-        // Convert server response to visual display
-        const width = state.depthMap.width || 400;
-        const height = state.depthMap.height || 400;
-        const pixels = state.depthMap.depth;
-        
-        // Create a temporary canvas for the data
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = width;
-        tempCanvas.height = height;
-        const tempCtx = tempCanvas.getContext('2d');
-        
-        // Create imageData
-        const imageData = tempCtx.createImageData(width, height);
-        
-        for (let i = 0; i < pixels.length; i++) {
-            // Convert depth value (0-1) to grayscale
-            const value = Math.floor(pixels[i] * 255);
-            
-            // RGBA for each pixel in the imageData
-            imageData.data[i * 4] = value;     // R
-            imageData.data[i * 4 + 1] = value; // G
-            imageData.data[i * 4 + 2] = value; // B
-            imageData.data[i * 4 + 3] = 200;   // A (semi-transparent)
-        }
-        
-        // Put the imageData on the temporary canvas
-        tempCtx.putImageData(imageData, 0, 0);
-        
-        // Draw to our full-sized overlay canvas
-        depthCtx.drawImage(tempCanvas, 0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
-    } else {
-        // Fallback to a simple depth map
-        depthCtx.fillStyle = 'rgba(0, 0, 255, 0.3)';
-        depthCtx.fillRect(0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
-    }
+
+	// Convert server response to visual display
+	const width = state.depthMap.width || 400;
+	const height = state.depthMap.height || 400;
+	const pixels = state.depthMap.depth;
+	
+	// Create a temporary canvas for the data
+	const tempCanvas = document.createElement('canvas');
+	tempCanvas.width = width;
+	tempCanvas.height = height;
+	const tempCtx = tempCanvas.getContext('2d');
+	
+	// Create imageData
+	const imageData = tempCtx.createImageData(width, height);
+	
+	for (let i = 0; i < pixels.length; i++) {
+		// Convert depth value (0-1) to grayscale
+		const value = Math.floor(pixels[i] * 255);
+		
+		// RGBA for each pixel in the imageData
+		imageData.data[i * 4] = value;     // R
+		imageData.data[i * 4 + 1] = value; // G
+		imageData.data[i * 4 + 2] = value; // B
+		imageData.data[i * 4 + 3] = 200;   // A (semi-transparent)
+	}
+	
+	// Put the imageData on the temporary canvas
+	tempCtx.putImageData(imageData, 0, 0);
+	
+	// Draw to our full-sized overlay canvas
+	depthCtx.drawImage(tempCanvas, 0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
 }
 
 // Initialize line data display
@@ -302,7 +295,7 @@ function toggleLineData() {
 function createFillerDepthMap() {
     // Return structured data that mimics the server response
     return {
-        "depth": new Array(400 * 400).fill(1), // All white (value of 1)
+        "depth": new Array(400 * 400).fill(.5),
         "width": 400,
         "height": 400
     };
