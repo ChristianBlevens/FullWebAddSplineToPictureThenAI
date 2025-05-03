@@ -62,15 +62,7 @@ function processImage(imageUrl) {
             // Fallback to placeholder data if servers fail
             state.depthMap = createFillerDepthMap();
             state.lineData = {
-                "lines": [
-                    {
-                        "x1": 100,
-                        "y1": 100,
-                        "x2": 300,
-                        "y2": 300,
-                        "score": 0.9
-                    }
-                ],
+                "lines": [],
                 "width": 400,
                 "height": 400
             };
