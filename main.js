@@ -106,3 +106,30 @@ function initializeCanvasContexts() {
 
 // Call this function after the DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeCanvasContexts);
+
+// Add this function to main.js
+function cropImageToSquare(imageUrl, callback) {
+    const img = new Image();
+    img.onload = () => {
+        // Create a square canvas
+        const canvas = document.createElement('canvas');
+        const size = Math.min(img.width, img.height);
+        canvas.width = size;
+        canvas.height = size;
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Calculate center crop coordinates
+        const sourceX = (img.width - size) / 2;
+        const sourceY = (img.height - size) / 2;
+        
+        // Draw the center square of the image
+        ctx.drawImage(img, sourceX, sourceY, size, size, 0, 0, size, size);
+        
+        // Return the cropped image
+        const croppedImage = canvas.toDataURL('image/jpeg', 0.9);
+        callback(croppedImage);
+    };
+    
+    img.src = imageUrl;
+}

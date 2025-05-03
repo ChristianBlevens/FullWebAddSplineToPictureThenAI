@@ -3,8 +3,8 @@ depthToggleBtn.addEventListener('click', toggleDepthMap);
 lineToggleBtn.addEventListener('click', toggleLineData);
 
 // Server URLs
-const DEPTH_MAP_SERVER_URL = 'https://your-depth-map-server.com/api/depth';
-const LINE_DATA_SERVER_URL = 'https://your-line-data-server.com/api/lines';
+const DEPTH_MAP_SERVER_URL = 'http://localhost:8080/api/depth';
+const LINE_DATA_SERVER_URL = 'http://localhost:8081/api/lines';
 
 function processImage(imageUrl) {
     // Show editor view and hide input views
@@ -61,7 +61,19 @@ function processImage(imageUrl) {
             
             // Fallback to placeholder data if servers fail
             state.depthMap = createFillerDepthMap();
-            state.lineData = {"lines":[[{"x":300,"y":300},{"x":100,"y":100}]]};
+            state.lineData = {
+                "lines": [
+                    {
+                        "x1": 100,
+                        "y1": 100,
+                        "x2": 300,
+                        "y2": 300,
+                        "score": 0.9
+                    }
+                ],
+                "width": 400,
+                "height": 400
+            };
             
             // Initialize canvas with fallback data
             initializeCanvas(imageUrl, 1000, 1000);
@@ -86,7 +98,7 @@ function processImage(imageUrl) {
 async function fetchDepthMap(imageDataUrl) {
     // Extract base64 data from data URL
     const base64Data = imageDataUrl.split(',')[1];
-    
+
     // Send image to depth map server
     const response = await fetch(DEPTH_MAP_SERVER_URL, {
         method: 'POST',
@@ -173,23 +185,21 @@ function initializeDepthMap() {
     const depthCtx = elements.depthOverlayCanvas.getContext('2d');
     depthCtx.clearRect(0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
     
-    if (typeof state.depthMap === 'string') {
-        // If depthMap is a data URL, draw it directly
-        const img = new Image();
-        img.onload = () => {
-            depthCtx.drawImage(img, 0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
-            // Apply semi-transparent overlay
-            depthCtx.globalAlpha = 0.5;
-            depthCtx.fillStyle = 'blue';
-            depthCtx.fillRect(0, 0, elements.depthOverlayCanvas.width, elements.depthOverlayCanvas.height);
-            depthCtx.globalAlpha = 1.0;
-        };
-        img.src = state.depthMap;
-    } else if (state.depthMap.depth) {
+    if (state.depthMap && state.depthMap.depth) {
         // If we have depth data from server (pixels array)
         // Convert server response to visual display
-        const imageData = depthCtx.createImageData(400, 400);
+        const width = state.depthMap.width || 400;
+        const height = state.depthMap.height || 400;
         const pixels = state.depthMap.depth;
+        
+        // Create a temporary canvas for the data
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Create imageData
+        const imageData = tempCtx.createImageData(width, height);
         
         for (let i = 0; i < pixels.length; i++) {
             // Convert depth value (0-1) to grayscale
@@ -199,14 +209,10 @@ function initializeDepthMap() {
             imageData.data[i * 4] = value;     // R
             imageData.data[i * 4 + 1] = value; // G
             imageData.data[i * 4 + 2] = value; // B
-            imageData.data[i * 4 + 3] = 128;   // A (semi-transparent)
+            imageData.data[i * 4 + 3] = 200;   // A (semi-transparent)
         }
         
-        // Create a temporary canvas for the 400x400 data
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = 400;
-        tempCanvas.height = 400;
-        const tempCtx = tempCanvas.getContext('2d');
+        // Put the imageData on the temporary canvas
         tempCtx.putImageData(imageData, 0, 0);
         
         // Draw to our full-sized overlay canvas
@@ -230,30 +236,40 @@ function drawLineData() {
     const lineCtx = elements.lineOverlayCanvas.getContext('2d');
     lineCtx.clearRect(0, 0, elements.lineOverlayCanvas.width, elements.lineOverlayCanvas.height);
     
-    // Scale factor to convert from 400x400 to 1000x1000
-    const scale = elements.lineOverlayCanvas.width / 400;
+    // Scale factor to convert from original image size to our canvas size
+    const canvasWidth = elements.lineOverlayCanvas.width;
+    const canvasHeight = elements.lineOverlayCanvas.height;
+    const origWidth = state.lineData.width || 400;
+    const origHeight = state.lineData.height || 400;
+    const scaleX = canvasWidth / origWidth;
+    const scaleY = canvasHeight / origHeight;
     
     // Check if we have the expected data structure
     if (state.lineData.lines && Array.isArray(state.lineData.lines)) {
         // Draw each line
-        state.lineData.lines.forEach(line => {
-            if (Array.isArray(line) && line.length >= 2) {
-                // Draw line between points
-                lineCtx.beginPath();
-                lineCtx.moveTo(line[0].x * scale, line[0].y * scale);
-                lineCtx.lineTo(line[1].x * scale, line[1].y * scale);
-                lineCtx.strokeStyle = 'orange';
-                lineCtx.lineWidth = 2;
-                lineCtx.stroke();
-                
-                // Draw points
-                line.forEach(point => {
-                    lineCtx.beginPath();
-                    lineCtx.arc(point.x * scale, point.y * scale, 5, 0, Math.PI * 2);
-                    lineCtx.fillStyle = 'orange';
-                    lineCtx.fill();
-                });
-            }
+        state.lineData.lines.forEach((line, index) => {
+            // Generate a color based on the index for visual variety
+            const hue = (index * 137) % 360; // Golden angle in degrees ensures good color distribution
+            lineCtx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+            lineCtx.fillStyle = lineCtx.strokeStyle;
+            lineCtx.lineWidth = 2;
+            
+            // Draw line between x1,y1 and x2,y2
+            lineCtx.beginPath();
+            lineCtx.moveTo(line.x1 * scaleX, line.y1 * scaleY);
+            lineCtx.lineTo(line.x2 * scaleX, line.y2 * scaleY);
+            lineCtx.stroke();
+            
+            // Draw circles at endpoints
+            // Start point
+            lineCtx.beginPath();
+            lineCtx.arc(line.x1 * scaleX, line.y1 * scaleY, 5, 0, Math.PI * 2);
+            lineCtx.fill();
+            
+            // End point
+            lineCtx.beginPath();
+            lineCtx.arc(line.x2 * scaleX, line.y2 * scaleY, 5, 0, Math.PI * 2);
+            lineCtx.fill();
         });
     }
 }
@@ -284,13 +300,10 @@ function toggleLineData() {
 
 // Create filler depth map (all white = value of 1)
 function createFillerDepthMap() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 400;
-    
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'white'; // Value of 1
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    return canvas.toDataURL();
+    // Return structured data that mimics the server response
+    return {
+        "depth": new Array(400 * 400).fill(1), // All white (value of 1)
+        "width": 400,
+        "height": 400
+    };
 }

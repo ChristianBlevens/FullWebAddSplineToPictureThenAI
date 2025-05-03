@@ -1,3 +1,5 @@
+const STABILITY_API_KEY = 'sk-F4Z3bZLTnnAjq5pzMOmtSyLo8uJjbO2wV59cDCcBX9Nk2I9z';
+
 elements.enhanceBtn.addEventListener('click', enhanceImage);
         
 function enhanceImage() {
@@ -52,67 +54,150 @@ function applyEnhancements() {
     // Get the combined image with lights
     const combinedImage = combinedCanvas.toDataURL('image/jpeg', 0.9);
     
+    // Save the non-enhanced combined image
+    state.combinedImage = combinedImage;
+    
+    // Show "Processing with AI" text in the processing overlay
+    const processingText = elements.processingOverlay.querySelector('p');
+    if (processingText) {
+        processingText.textContent = 'Enhancing with AI... This may take a few seconds';
+    }
+    
+    // Set a timeout to handle potential long delays
+    const timeoutDuration = 30000; // 30 seconds timeout
+    let timeoutId = setTimeout(() => {
+        console.error('API request timed out');
+        handleEnhancementFailure('Request timed out. You can still download the non-enhanced image.');
+    }, timeoutDuration);
+    
+    // Send the image to the Stable Diffusion API
+    sendToStableDiffusion(combinedImage)
+        .then(enhancedImageUrl => {
+            // Clear the timeout since we got a response
+            clearTimeout(timeoutId);
+            
+            // Once we get the enhanced image back, display it
+            const img = new Image();
+            img.onload = () => {
+                // Clear the canvas entirely
+                ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+                
+                // Draw the enhanced image on the main canvas
+                ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
+                
+                // Update instructions
+                elements.instructions.textContent = 'Your enhanced image is ready!';
+                
+                // Hide processing overlay
+                elements.processingOverlay.classList.add('hidden');
+                state.processing = false;
+                
+                // Store the enhanced image for download
+                state.enhancedImage = enhancedImageUrl;
+                
+                // Stop animation loop since we're replacing it
+                stopLightsAnimation();
+                
+                // Now that we've captured and drawn the combined image, we can hide the overlay
+                elements.lightsOverlayCanvas.classList.add('hidden');
+            };
+            img.src = enhancedImageUrl;
+        })
+        .catch(error => {
+            // Clear the timeout since we got a response (even if it's an error)
+            clearTimeout(timeoutId);
+            
+            console.error('AI enhancement failed:', error);
+            handleEnhancementFailure('AI enhancement failed. You can still download the non-enhanced image.');
+        });
+}
+
+// Function to send image to Stable Diffusion API
+async function sendToStableDiffusion(imageDataUrl) {
+    // Extract base64 data from data URL
+    const base64Data = imageDataUrl.split(',')[1];
+    
+    // Stable Diffusion API settings
+    const STABILITY_API_URL = 'https://api.stability.ai/v2beta/stable-image/generate/sd3';
+    
+    // API key directly in the code - replace with your key
+    // NOTE: For production, this should be handled securely through a server
+    const STABILITY_KEY = STABILITY_API_KEY;
+    
+    // Prepare the form data
+    const formData = new FormData();
+    
+    // Convert base64 to Blob
+    const byteCharacters = atob(base64Data);
+    const byteArrays = [];
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteArrays.push(byteCharacters.charCodeAt(i));
+    }
+    const blob = new Blob([new Uint8Array(byteArrays)], { type: 'image/jpeg' });
+    
+    // Add the image file
+    formData.append('image', blob, 'christmas-lights-photo.jpg');
+    
+    // Add other parameters from the Python example
+    formData.append('prompt', 'A professional photograph of a festive home decorated with Christmas lights, volumetric light, caustic lighting, glowing warm ambiance, soft light halos, dappled light patterns, light diffusion on surroundings, crisp details, twinkling lights with subtle lens flare, soft bokeh effect in background, Sony Alpha a7 III, 35mm lens, f/2.8 aperture, long exposure, cinematic composition, golden hour fading to blue hour');
+    formData.append('negative_prompt', 'cgi, painting, drawing, anime, cartoon, octane render, bad photo, text, bad photography, worst quality, low quality, blurry, bad proportions, deformed, distorted, grainy, noisy, oversaturated, overexposed');
+    formData.append('strength', '0.30');
+    formData.append('seed', '0');
+    formData.append('output_format', 'png');
+    formData.append('mode', 'image-to-image');
+    formData.append('model', 'sd3.5-medium');
+    
+    // Send request to Stable Diffusion API
+    const response = await fetch(STABILITY_API_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${STABILITY_KEY}`,
+            'Accept': 'image/*'  // This was missing in the previous version
+        },
+        body: formData
+    });
+    
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Stable Diffusion API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    // Get the image data from the response
+    const imageBlob = await response.blob();
+    return URL.createObjectURL(imageBlob);
+}
+
+// Function to handle enhancement failures
+function handleEnhancementFailure(message) {
+    // Display alert with error message
+    alert(message);
+    
+    // Use the non-enhanced combined image
     const img = new Image();
     img.onload = () => {
-        // Create a new canvas for the enhanced image
-        const enhanceCanvas = document.createElement('canvas');
-        enhanceCanvas.width = img.width;
-        enhanceCanvas.height = img.height;
+        // Clear the canvas entirely
+        ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
         
-        const enhanceCtx = enhanceCanvas.getContext('2d');
+        // Draw the combined image on the main canvas
+        ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
         
-        // Draw the combined image
-        enhanceCtx.drawImage(img, 0, 0);
+        // Update instructions
+        elements.instructions.textContent = 'Non-enhanced image is ready for download';
         
-        // Apply effects to simulate AI enhancement
-        enhanceCtx.filter = 'contrast(110%) brightness(110%) saturate(120%)';
-        enhanceCtx.globalCompositeOperation = 'source-atop';
-        enhanceCtx.drawImage(img, 0, 0);
+        // Hide processing overlay
+        elements.processingOverlay.classList.add('hidden');
+        state.processing = false;
         
-        // Reset filters
-        enhanceCtx.filter = 'none';
-        enhanceCtx.globalCompositeOperation = 'source-over';
+        // Store the non-enhanced image for download
+        state.enhancedImage = state.combinedImage;
         
-        // Add subtle vignette
-        const gradient = enhanceCtx.createRadialGradient(
-            enhanceCanvas.width / 2, enhanceCanvas.height / 2, enhanceCanvas.height * 0.3,
-            enhanceCanvas.width / 2, enhanceCanvas.height / 2, enhanceCanvas.height * 0.8
-        );
-        gradient.addColorStop(0, 'rgba(0,0,0,0)');
-        gradient.addColorStop(1, 'rgba(0,0,0,0.3)');
+        // Stop animation loop since we're replacing it
+        stopLightsAnimation();
         
-        enhanceCtx.fillStyle = gradient;
-        enhanceCtx.fillRect(0, 0, enhanceCanvas.width, enhanceCanvas.height);
-        
-        // Save the enhanced image
-        state.enhancedImage = enhanceCanvas.toDataURL('image/jpeg', 0.9);
-        
-        // Display enhanced image directly in the main canvas
-        const displayImg = new Image();
-        displayImg.onload = () => {
-            // Clear the canvas entirely
-            ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
-            
-            // Draw the enhanced image on the main canvas
-            ctx.drawImage(displayImg, 0, 0, elements.canvas.width, elements.canvas.height);
-            
-            // Update instructions
-            elements.instructions.textContent = 'Your enhanced image is ready!';
-            
-            // Hide processing overlay
-            elements.processingOverlay.classList.add('hidden');
-            state.processing = false;
-            
-            // Stop animation loop since we're replacing it
-            stopLightsAnimation();
-            
-            // Now that we've captured and drawn the combined image, we can hide the overlay
-            elements.lightsOverlayCanvas.classList.add('hidden');
-        };
-        displayImg.src = state.enhancedImage;
+        // Hide the lights overlay
+        elements.lightsOverlayCanvas.classList.add('hidden');
     };
-    
-    img.src = combinedImage;
+    img.src = state.combinedImage;
 }
 
 elements.downloadBtn.addEventListener('click', downloadImage);

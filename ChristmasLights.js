@@ -198,7 +198,7 @@ function calculateDepthAdjustedLightPoints(spline) {
 			const y = start.y + dy * t;
 			
 			// Sample depth at current position
-			const depth = getDepthAtPoint(x, y);
+			const depth = 1 - getDepthAtPoint(x, y);
 			
 			// Accumulate depth
 			// Use depth factor to make deeper areas (higher depth values) accumulate faster

@@ -41,20 +41,26 @@ function stopCamera() {
 elements.takePictureBtn.addEventListener('click', captureImage);
 
 function captureImage() {
-	// Create a temporary canvas to capture the video frame
-	const tempCanvas = document.createElement('canvas');
-	tempCanvas.width = elements.video.videoWidth;
-	tempCanvas.height = elements.video.videoHeight;
-	
-	const tempCtx = tempCanvas.getContext('2d');
-	tempCtx.drawImage(elements.video, 0, 0, tempCanvas.width, tempCanvas.height);
-	
-	// Get the full resolution image data
-	state.fullResImage = tempCanvas.toDataURL('image/jpeg', 0.9);
-	
-	// Stop the camera
-	stopCamera();
-	
-	// Process the captured image
-	processImage(state.fullResImage);
+    // Create a temporary canvas to capture the video frame
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = elements.video.videoWidth;
+    tempCanvas.height = elements.video.videoHeight;
+    
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(elements.video, 0, 0, tempCanvas.width, tempCanvas.height);
+    
+    // Get the full resolution image data
+    const fullImage = tempCanvas.toDataURL('image/jpeg', 0.9);
+    
+    // Crop it to square
+    cropImageToSquare(fullImage, (croppedImage) => {
+        // Save the cropped image
+        state.fullResImage = croppedImage;
+        
+        // Stop the camera
+        stopCamera();
+        
+        // Process the captured image
+        processImage(state.fullResImage);
+    });
 }
