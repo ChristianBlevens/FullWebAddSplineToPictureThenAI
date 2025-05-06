@@ -3,8 +3,8 @@ depthToggleBtn.addEventListener('click', toggleDepthMap);
 lineToggleBtn.addEventListener('click', toggleLineData);
 
 // Server URLs
-const DEPTH_MAP_SERVER_URL = 'http://localhost:8080/api/depth';
-const LINE_DATA_SERVER_URL = 'http://localhost:8081/api/lines';
+const DEPTH_MAP_SERVER_URL = 'https://depth-map-service-848649041437.us-west1.run.app/api/depth';
+const LINE_DATA_SERVER_URL = 'https://line-detection-service-888356138865.us-west1.run.app/api/lines';
 
 function processImage(imageUrl) {
     // Show editor view and hide input views
