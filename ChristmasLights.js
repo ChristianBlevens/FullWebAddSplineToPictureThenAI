@@ -87,7 +87,7 @@ function startLightsAnimation() {
 						const b = parseInt(color.substring(5, 7), 16);
 						
 						// Create enhanced radial gradient with better size calculation
-						const glowSize = (size + (45 * state.glowSizeFactor)) * depth; // Larger glow
+						const glowSize = (size + (65 * state.glowSizeFactor)) * depth; // Larger glow
 						const baseAlpha = 0.85; // Slightly reduced base transparency for softer glow
 						const gradient = elements.lightsCtx.createRadialGradient(
 							point.x, point.y, 0,
