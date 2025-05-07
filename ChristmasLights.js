@@ -186,7 +186,7 @@ function calculateDepthAdjustedLightPoints(spline) {
 	// For 0.5 (sparse): THRESHOLD is doubled
 	// For 1 (normal): THRESHOLD is unchanged
 	// For 2 (dense): THRESHOLD is halved
-	const baseThreshold = 10; // Base threshold for placing a light
+	const baseThreshold = 5; // Base threshold for placing a light
 	const THRESHOLD = baseThreshold / state.densityFactor;
 	const STEP_SIZE = 1; // Step size in pixels for traversing the spline
 	

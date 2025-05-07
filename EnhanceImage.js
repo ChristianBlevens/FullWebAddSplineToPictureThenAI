@@ -3,39 +3,39 @@ const STABILITY_API_KEY = 'sk-F4Z3bZLTnnAjq5pzMOmtSyLo8uJjbO2wV59cDCcBX9Nk2I9z';
 elements.enhanceBtn.addEventListener('click', enhanceImage);
         
 function enhanceImage() {
-	// Set enhance mode to disable further drawing
-	state.inEnhanceMode = true;
-	
-	// Show processing overlay
-	elements.processingOverlay.classList.remove('hidden');
-	state.processing = true;
-	
-	// Adjust UI for enhance mode
-	elements.undoBtn.classList.add('hidden');
-	elements.clearBtn.classList.add('hidden');
-	elements.enhanceBtn.classList.add('hidden');
-	elements.depthToggleBtn.classList.add('hidden');
-	elements.lineToggleBtn.classList.add('hidden');
-	elements.downloadBtn.classList.remove('hidden');
-	
-	// Hide control sidebar
-	document.querySelector('.control-sidebar').style.display = 'none';
+    // Set enhance mode to disable further drawing
+    state.inEnhanceMode = true;
+    
+    // Show processing overlay
+    elements.processingOverlay.classList.remove('hidden');
+    state.processing = true;
+    
+    // Adjust UI for enhance mode
+    elements.undoBtn.classList.add('hidden');
+    elements.clearBtn.classList.add('hidden');
+    elements.enhanceBtn.classList.add('hidden');
+    elements.depthToggleBtn.classList.add('hidden');
+    elements.lineToggleBtn.classList.add('hidden');
+    elements.downloadBtn.classList.remove('hidden');
+    
+    // Hide control sidebar
+    document.querySelector('.control-sidebar').style.display = 'none';
 
-	// Hide overlays
-	elements.depthOverlayCanvas.classList.add('hidden');
-	elements.lineOverlayCanvas.classList.add('hidden');
-	elements.lightsOverlayCanvas.classList.add('hidden');
+    // Hide overlays
+    elements.depthOverlayCanvas.classList.add('hidden');
+    elements.lineOverlayCanvas.classList.add('hidden');
+    elements.lightsOverlayCanvas.classList.add('hidden');
 
-	// Remove crosshair cursor
-	elements.canvas.classList.remove('crosshair');
+    // Remove crosshair cursor
+    elements.canvas.classList.remove('crosshair');
 
-	// Show processing for a short time
-	setTimeout(() => {
-		// Capture a frame with just the image and lights, no splines or control points
-		// We do this by temporarily rendering a frame with inEnhanceMode true,
-		// which will exclude the splines and control points
-		applyEnhancements();
-	}, 2000);
+    // Show processing for a short time
+    setTimeout(() => {
+        // Capture a frame with just the image and lights, no splines or control points
+        // We do this by temporarily rendering a frame with inEnhanceMode true,
+        // which will exclude the splines and control points
+        applyEnhancements();
+    }, 2000);
 }
 
 function applyEnhancements() {
@@ -66,15 +66,35 @@ function applyEnhancements() {
     // Set a timeout to handle potential long delays
     const timeoutDuration = 30000; // 30 seconds timeout
     let timeoutId = setTimeout(() => {
-        //console.error('API request timed out');
+        console.error('API request timed out');
         handleEnhancementFailure('Request timed out. You can still download the non-enhanced image.');
     }, timeoutDuration);
     
-    // Send the image to the Stable Diffusion API
-    sendToStableDiffusion(combinedImage)
+    // Variable to track if we're still processing
+    let isProcessing = true;
+    
+    // Add a progress indicator update
+    let progressCounter = 0;
+    const progressInterval = setInterval(() => {
+        if (!isProcessing) {
+            clearInterval(progressInterval);
+            return;
+        }
+        
+        progressCounter++;
+        const dots = '.'.repeat(progressCounter % 4);
+        if (processingText) {
+            processingText.textContent = `Enhancing with AI${dots} This may take a few seconds`;
+        }
+    }, 1000);
+    
+    // Send the image to the Stability AI Replace Background and Relight API
+    sendToStabilityRelight(combinedImage)
         .then(enhancedImageUrl => {
             // Clear the timeout since we got a response
             clearTimeout(timeoutId);
+            isProcessing = false;
+            clearInterval(progressInterval);
             
             // Once we get the enhanced image back, display it
             const img = new Image();
@@ -106,19 +126,21 @@ function applyEnhancements() {
         .catch(error => {
             // Clear the timeout since we got a response (even if it's an error)
             clearTimeout(timeoutId);
+            isProcessing = false;
+            clearInterval(progressInterval);
             
-            //console.error('AI enhancement failed:', error);
+            console.error('AI enhancement failed:', error);
             handleEnhancementFailure('AI enhancement failed. You can still download the non-enhanced image.');
         });
 }
 
-// Function to send image to Stable Diffusion API
-async function sendToStableDiffusion(imageDataUrl) {
+// Function to send image to Stability Replace Background and Relight API
+async function sendToStabilityRelight(imageDataUrl) {
     // Extract base64 data from data URL
     const base64Data = imageDataUrl.split(',')[1];
     
-    // Stable Diffusion API settings
-    const STABILITY_API_URL = 'https://api.stability.ai/v2beta/stable-image/generate/sd3';
+    // Stability API settings for Replace Background and Relight
+    const STABILITY_API_URL = 'https://api.stability.ai/v2beta/stable-image/edit/replace-background-and-relight';
     
     // API key directly in the code - replace with your key
     // NOTE: For production, this should be handled securely through a server
@@ -135,36 +157,105 @@ async function sendToStableDiffusion(imageDataUrl) {
     }
     const blob = new Blob([new Uint8Array(byteArrays)], { type: 'image/jpeg' });
     
-    // Add the image file
-    formData.append('image', blob, 'christmas-lights-photo.jpg');
+    // Add FILES
+    formData.append('subject_image', blob, 'christmas-lights-photo.jpg');
     
-    // Add other parameters from the Python example
-    formData.append('prompt', 'A professional photograph of a festive home decorated with Christmas lights, volumetric light, caustic lighting, glowing warm ambiance, soft light halos, dappled light patterns, light diffusion on surroundings, crisp details, twinkling lights with subtle lens flare, soft bokeh effect in background, Sony Alpha a7 III, 35mm lens, f/2.8 aperture, long exposure, cinematic composition, golden hour fading to blue hour');
-    formData.append('negative_prompt', 'cgi, painting, drawing, anime, cartoon, octane render, bad photo, text, bad photography, worst quality, low quality, blurry, bad proportions, deformed, distorted, grainy, noisy, oversaturated, overexposed');
-    formData.append('strength', '0.30');
-    formData.append('seed', '0');
+    // Fetch the light reference image
+    try {
+        const lightReferenceResponse = await fetch('https://i.imgur.com/yhFJRFc.png');
+        if (!lightReferenceResponse.ok) {
+            throw new Error(`Failed to fetch light reference: ${lightReferenceResponse.status}`);
+        }
+        const lightReferenceBlob = await lightReferenceResponse.blob();
+        formData.append('light_reference', lightReferenceBlob, 'Enhancement8.png');
+    } catch (error) {
+        console.error('Error fetching light reference:', error);
+        throw error;
+    }
+    
+    // Add PARAMETERS
+    formData.append('background_prompt', "Professional frontal photograph of a small single-story house filling most of the frame, perfect straight-on symmetrical view with no angle, bungalow style home, one floor only, nighttime scene, cloudy winter sky, fresh snow covering the ground, vibrant multicolored Christmas lights concentrated on the roof lines, equal distribution of red, blue, green, purple, and teal hues, no single dominant color, dramatic light play on the home's façade, windows showing warm yellow interior lighting, untouched snow reflecting colorful light patterns, empty foreground with clear unobstructed view, perfectly centered composition, low-height residential structure, cottage-like proportions, photorealistic composition with enhanced lighting post-processing, dramatic colorful lighting as main subject, architectural details clearly visible, high contrast between colorful illumination and dark snowy surroundings, perfectly level horizon");
+    formData.append('foreground_prompt', '');
+    formData.append('negative_prompt', '');
+    formData.append('preserve_original_subject', '0.6');
+    formData.append('original_background_depth', '0.5');
+    formData.append('keep_original_background', 'true');
+    formData.append('light_source_strength', '1');
     formData.append('output_format', 'png');
-    formData.append('mode', 'image-to-image');
-    formData.append('model', 'sd3.5-medium');
+    formData.append('seed', '0');
     
-    // Send request to Stable Diffusion API
+    // Send initial request to Stability API
     const response = await fetch(STABILITY_API_URL, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${STABILITY_KEY}`,
-            'Accept': 'image/*'  // This was missing in the previous version
+            'Accept': 'application/json'
         },
         body: formData
     });
     
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Stable Diffusion API error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Stability API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
-    // Get the image data from the response
-    const imageBlob = await response.blob();
-    return URL.createObjectURL(imageBlob);
+    // Parse the response to get the generation ID
+    const responseData = await response.json();
+    const generationId = responseData.id;
+    
+    if (!generationId) {
+        throw new Error('No generation ID returned from API');
+    }
+    
+    console.log(`Generation started with ID: ${generationId}`);
+    
+    // Now poll for results
+    return pollForResults(generationId, STABILITY_KEY);
+}
+
+// Function to poll for results
+async function pollForResults(generationId, apiKey) {
+    const maxAttempts = 15;  // Maximum number of polling attempts
+    const pollingInterval = 2000;  // 2 seconds between polls (to fit within 30 sec timeout)
+    let attempts = 0;
+    
+    // Poll in a loop
+    while (attempts < maxAttempts) {
+        attempts++;
+        console.log(`Polling for results (attempt ${attempts}/${maxAttempts}): https://api.stability.ai/v2beta/results/${generationId}`);
+        
+        try {
+            const response = await fetch(`https://api.stability.ai/v2beta/results/${generationId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Accept': '*/*'
+                }
+            });
+            
+            // If response is 202, it means the generation is still processing
+            if (response.status === 202) {
+                console.log('Still processing, waiting to poll again...');
+                await new Promise(resolve => setTimeout(resolve, pollingInterval));
+                continue;
+            }
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Result polling error: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+            
+            // Generation complete, get the image data
+            const imageBlob = await response.blob();
+            return URL.createObjectURL(imageBlob);
+            
+        } catch (error) {
+            console.error('Error polling for results:', error);
+            throw error;
+        }
+    }
+    
+    throw new Error(`Timed out after ${maxAttempts} polling attempts`);
 }
 
 // Function to handle enhancement failures
@@ -207,7 +298,7 @@ function downloadImage() {
         // Download enhanced image
         const link = document.createElement('a');
         link.href = state.enhancedImage;
-        link.download = 'christmas-lights-photo.jpg';
+        link.download = 'christmas-lights-photo-enhanced.png';
         
         // Trigger download
         document.body.appendChild(link);

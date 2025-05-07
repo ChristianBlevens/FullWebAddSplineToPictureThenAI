@@ -20,7 +20,7 @@ const state = {
     colorPickerPosition: null, // For positioning the color picker (new)
     animationSpeed: 1.0, // Default animation speed (new)
 	cycleLength: 10, // Default number of lights before color cycle resets
-    glowSizeFactor: 1.0 // Default glow size factor for light glow effects
+    glowSizeFactor: 1 // Default glow size factor for light glow effects
 };
 
 // DOM Elements
@@ -131,7 +131,7 @@ function cropImageToSquare(imageUrl, callback) {
 
 // Function to preload cloud run servers
 function preloadCloudRunServers() {
-    console.log("Preloading Cloud Run servers...");
+    //console.log("Preloading Cloud Run servers...");
     
     // URLs for the servers we need to warm up
     const serverUrls = [
@@ -146,10 +146,10 @@ function preloadCloudRunServers() {
             mode: 'cors' // Enable CORS for cross-origin requests
         })
         .then(response => {
-            console.log(`Server ${url} preloaded successfully`);
+            //console.log(`Server ${url} preloaded successfully`);
         })
         .catch(error => {
-            console.warn(`Failed to preload server ${url}:`, error);
+            //console.warn(`Failed to preload server ${url}:`, error);
             // Non-blocking error - we don't want to stop the app if preloading fails
         });
     });
