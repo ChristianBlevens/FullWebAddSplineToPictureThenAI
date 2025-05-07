@@ -190,6 +190,8 @@ function calculateDepthAdjustedLightPoints(spline) {
 	const THRESHOLD = baseThreshold / state.densityFactor;
 	const STEP_SIZE = 1; // Step size in pixels for traversing the spline
 	
+	state.depthSamples = [];
+	
 	// Process each segment of the spline
 	for (let i = 0; i < spline.length - 1; i++) {
 		const start = spline[i];
@@ -211,7 +213,7 @@ function calculateDepthAdjustedLightPoints(spline) {
 		
 		// Track where the last light was placed to avoid double lights at junctions
 		let lastLightPosition = -1;
-		
+
 		// Traverse the segment step by step
 		for (let step = 0; step <= steps; step++) {
 			const t = step / steps;
@@ -222,6 +224,9 @@ function calculateDepthAdjustedLightPoints(spline) {
 			
 			// Sample depth at current position
 			const depth = 1 - getDepthAtPoint(x, y);
+			
+			// Store depth sample for averaging
+			state.depthSamples.push(depth);
 			
 			// Accumulate depth
 			// Use depth factor to make deeper areas (higher depth values) accumulate faster
@@ -252,7 +257,7 @@ function calculateDepthAdjustedLightPoints(spline) {
 			}
 		}
 	}
-	
+
 	return points;
 }
 

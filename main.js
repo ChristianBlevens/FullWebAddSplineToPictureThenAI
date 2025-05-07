@@ -14,6 +14,8 @@ const state = {
     enhancedImage: null,
     lastClickedPoint: null, // Used for tracking if we clicked on existing point
     inEnhanceMode: false, // Flag to control UI state after enhance button is pressed
+	averageDepth: 0.5, // Default average depth value
+    depthSamples: [], // Array to store all depth samples for averaging
     densityFactor: 1.0, // Default density factor for lights (new)
     colorMarkers: [], // Array of {y, color} objects for color timing (new)
     activeColorMarkerIndex: -1, // For color picker (new)

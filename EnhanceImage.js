@@ -28,6 +28,9 @@ function enhanceImage() {
 
     // Remove crosshair cursor
     elements.canvas.classList.remove('crosshair');
+	
+	// Calculate average depth after collecting all samples
+	calculateAverageDepth();
 
     // Show processing for a short time
     setTimeout(() => {
@@ -36,6 +39,15 @@ function enhanceImage() {
         // which will exclude the splines and control points
         applyEnhancements();
     }, 2000);
+}
+
+// Add this new function to calculate the average depth
+function calculateAverageDepth() {
+    if (state.depthSamples.length > 0) {
+        const sum = state.depthSamples.reduce((total, depth) => total + depth, 0);
+        state.averageDepth = sum / state.depthSamples.length;
+        //console.log(`Average depth calculated: ${state.averageDepth}`);
+    }
 }
 
 function applyEnhancements() {
@@ -175,10 +187,10 @@ async function sendToStabilityRelight(imageDataUrl) {
     
     // Add PARAMETERS
     formData.append('background_prompt', "Professional frontal photograph of a small single-story house filling most of the frame, perfect straight-on symmetrical view with no angle, bungalow style home, one floor only, nighttime scene, cloudy winter sky, fresh snow covering the ground, vibrant multicolored Christmas lights concentrated on the roof lines, equal distribution of red, blue, green, purple, and teal hues, no single dominant color, dramatic light play on the home's façade, windows showing warm yellow interior lighting, untouched snow reflecting colorful light patterns, empty foreground with clear unobstructed view, perfectly centered composition, low-height residential structure, cottage-like proportions, photorealistic composition with enhanced lighting post-processing, dramatic colorful lighting as main subject, architectural details clearly visible, high contrast between colorful illumination and dark snowy surroundings, perfectly level horizon");
-    formData.append('foreground_prompt', '');
+    formData.append('foreground_prompt', 'Beautiful home with bright multicolor christmas lights');
     formData.append('negative_prompt', '');
     formData.append('preserve_original_subject', '0.6');
-    formData.append('original_background_depth', '0.5');
+    formData.append('original_background_depth', (1 - state.averageDepth).toString());
     formData.append('keep_original_background', 'true');
     formData.append('light_source_strength', '1');
     formData.append('output_format', 'png');
