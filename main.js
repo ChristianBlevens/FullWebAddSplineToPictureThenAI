@@ -89,10 +89,8 @@ const ctx = elements.canvas.getContext('2d');
 function initializeDefaultColors() {
     // Add some default color markers
     addColorMarker(0, '#ff0000');     // Red at top
-    addColorMarker(50, '#00ff00');    // Green at middle
-    addColorMarker(100, '#0000ff');   // Blue at bottom
-    addColorMarker(25, '#ffff00');    // Yellow at 25%
-    addColorMarker(75, '#ff00ff');    // Magenta at 75%
+    addColorMarker(50, '#0000ff');    // Blue at middle
+    addColorMarker(100, '#ff0000');   // Red at bottom
 }
 
 // Initialize the canvas contexts
@@ -103,9 +101,6 @@ function initializeCanvasContexts() {
     // Add click event to lights overlay
     elements.lightsOverlayCanvas.addEventListener('click', handleCanvasClick);
 }
-
-// Call this function after the DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeCanvasContexts);
 
 // Add this function to main.js
 function cropImageToSquare(imageUrl, callback) {
@@ -133,3 +128,38 @@ function cropImageToSquare(imageUrl, callback) {
     
     img.src = imageUrl;
 }
+
+// Function to preload cloud run servers
+function preloadCloudRunServers() {
+    console.log("Preloading Cloud Run servers...");
+    
+    // URLs for the servers we need to warm up
+    const serverUrls = [
+        'https://depth-map-service-848649041437.us-west1.run.app/',
+        'https://line-detection-service-888356138865.us-west1.run.app/'
+    ];
+    
+    // Ping each server with a simple GET request
+    serverUrls.forEach(url => {
+        fetch(url, { 
+            method: 'GET',
+            mode: 'cors' // Enable CORS for cross-origin requests
+        })
+        .then(response => {
+            console.log(`Server ${url} preloaded successfully`);
+        })
+        .catch(error => {
+            console.warn(`Failed to preload server ${url}:`, error);
+            // Non-blocking error - we don't want to stop the app if preloading fails
+        });
+    });
+}
+
+// Call this function early in the application lifecycle
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Canvas contexts (your existing code)
+    initializeCanvasContexts();
+    
+    // Preload servers immediately
+    preloadCloudRunServers();
+});
