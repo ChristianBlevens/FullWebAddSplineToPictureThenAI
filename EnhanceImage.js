@@ -200,7 +200,7 @@ const EnhanceModule = (function() {
         
         // Add parameters
         formData.append('background_prompt', "masterpiece, professionally retouched, christmas lights, magical illumination, vibrant glowing orbs, ethereal bokeh, cinematic lighting, dramatic lighting, breathtaking atmosphere, enchanted nightscape, magical glow, luminous, celestial sparkling, dream-like, high dynamic range, rich color saturation, magical realism, perfect exposure, ambient glow, festive atmosphere, fairy tale aesthetic, crystal clear, warm golden light, intricate light patterns, photorealistic, detailed, 8k resolution, professional photography, christmas magic");
-        formData.append('foreground_prompt', "Cozy craftsman home at twilight, adorned with vibrant Christmas lights in multiple colors twinkling along the roofline and windows, Fresh snow blankets the front yard, reflecting the colorful glow, Warm yellow light emanates from frost-edged windows, Crisp winter air, photorealistic style, cinematic lighting, 8k resolution");
+        formData.append('foreground_prompt', "Cozy craftsman home at twilight, adorned with vibrant Christmas lights in multiple colors twinkling along the roofline, Fresh snow blankets the front yard, reflecting the colorful glow, Warm yellow light emanates from frost-edged windows, Crisp winter air, photorealistic style, cinematic lighting, 8k resolution");
         formData.append('negative_prompt', '');
         formData.append('preserve_original_subject', '0.6');
         formData.append('original_background_depth', state.averageDepth.toString());
