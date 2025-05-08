@@ -14,14 +14,14 @@ const state = {
     enhancedImage: null,
     lastClickedPoint: null, // Used for tracking if we clicked on existing point
     inEnhanceMode: false, // Flag to control UI state after enhance button is pressed
-	averageDepth: 0.5, // Default average depth value
+    averageDepth: 0.5, // Default average depth value
     depthSamples: [], // Array to store all depth samples for averaging
     densityFactor: 1.0, // Default density factor for lights (new)
     colorMarkers: [], // Array of {y, color} objects for color timing (new)
     activeColorMarkerIndex: -1, // For color picker (new)
     colorPickerPosition: null, // For positioning the color picker (new)
     animationSpeed: 1.0, // Default animation speed (new)
-	cycleLength: 10, // Default number of lights before color cycle resets
+    cycleLength: 10, // Default number of lights before color cycle resets
     glowSizeFactor: 1 // Default glow size factor for light glow effects
 };
 
@@ -56,9 +56,9 @@ const elements = {
     
     // Overlay Canvases (new)
     depthOverlayCanvas: document.getElementById('depthOverlayCanvas'),
-	lineOverlayCanvas: document.getElementById('lineOverlayCanvas'),
-	lightsOverlayCanvas: document.getElementById('lightsOverlayCanvas'),
-	lightsCtx: null, // We'll initialize this in the init function
+    lineOverlayCanvas: document.getElementById('lineOverlayCanvas'),
+    lightsOverlayCanvas: document.getElementById('lightsOverlayCanvas'),
+    lightsCtx: null, // We'll initialize this in the init function
     
     // Control Elements
     densitySlider: document.getElementById('densitySlider'),
@@ -68,7 +68,7 @@ const elements = {
     selectColorBtn: document.getElementById('selectColorBtn'),
     cancelColorBtn: document.getElementById('cancelColorBtn'),
     speedSlider: document.getElementById('speedSlider'),
-	glowSizeSlider: document.getElementById('glowSizeSlider'),
+    glowSizeSlider: document.getElementById('glowSizeSlider'),
     
     // Results
     enhancedImage: document.getElementById('enhancedImage'),
@@ -80,8 +80,8 @@ const elements = {
     downloadBtn: document.getElementById('downloadBtn'),
     resetBtn: document.getElementById('resetBtn'),
     editorButtons: document.getElementById('editorButtons'),
-	depthToggleBtn: document.getElementById('depthToggleBtn'),
-	lineToggleBtn: document.getElementById('lineToggleBtn')
+    depthToggleBtn: document.getElementById('depthToggleBtn'),
+    lineToggleBtn: document.getElementById('lineToggleBtn')
 };
 
 // Initialize canvas context
@@ -100,8 +100,8 @@ function initializeCanvasContexts() {
     // Lights overlay context
     elements.lightsCtx = elements.lightsOverlayCanvas.getContext('2d');
     
-    // Add click event to lights overlay
-    elements.lightsOverlayCanvas.addEventListener('click', handleCanvasClick);
+    // Note: We no longer add a click handler here since DrawingFunctions.js
+    // now handles all canvas interaction through setupCanvasListeners()
 }
 
 // Add this function to main.js
@@ -159,7 +159,7 @@ function preloadCloudRunServers() {
 
 // Call this function early in the application lifecycle
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Canvas contexts (your existing code)
+    // Initialize Canvas contexts
     initializeCanvasContexts();
     
     // Preload servers immediately

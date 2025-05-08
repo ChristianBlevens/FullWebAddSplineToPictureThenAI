@@ -14,11 +14,7 @@ function setupCanvasListeners() {
     elements.lightsOverlayCanvas.addEventListener('mouseup', handleInteractionEnd);
     elements.lightsOverlayCanvas.addEventListener('touchstart', handleInteractionStart);
     elements.lightsOverlayCanvas.addEventListener('touchend', handleInteractionEnd);
-    
-    // Remove the old click event listeners as we're replacing them
-    elements.canvas.removeEventListener('click', handleCanvasClick);
-    elements.lightsOverlayCanvas.removeEventListener('click', handleCanvasClick);
-    
+	
     //console.log('Canvas event listeners set up');
 }
 
@@ -236,16 +232,6 @@ function handlePointPlacement(point, existingPointInfo = null) {
     // Redraw and update buttons
     redrawCanvas();
     updateButtonStates();
-}
-
-// Keep this function for backward compatibility
-// This will be called by any existing event listeners from other files
-function handleCanvasClick(e) {
-    //console.log('Legacy handleCanvasClick called');
-    // Convert click to our new interaction model
-    handleInteractionStart(e);
-    // Simulate immediate end of interaction
-    setTimeout(() => handleInteractionEnd(e), 10);
 }
 
 function findExistingPoint(x, y) {
