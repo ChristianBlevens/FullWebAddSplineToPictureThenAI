@@ -46,7 +46,7 @@ function calculateAverageDepth() {
     if (state.depthSamples.length > 0) {
         const sum = state.depthSamples.reduce((total, depth) => total + depth, 0);
         state.averageDepth = sum / state.depthSamples.length;
-        //console.log(`Average depth calculated: ${state.averageDepth}`);
+        console.log(`Average depth calculated: ${state.averageDepth}`);
     }
 }
 
@@ -190,7 +190,7 @@ async function sendToStabilityRelight(imageDataUrl) {
     formData.append('foreground_prompt', 'Beautiful home with bright multicolor christmas lights');
     formData.append('negative_prompt', '');
     formData.append('preserve_original_subject', '0.6');
-    formData.append('original_background_depth', (1 - state.averageDepth).toString());
+    formData.append('original_background_depth', state.averageDepth.toString());
     formData.append('keep_original_background', 'true');
     formData.append('light_source_strength', '1');
     formData.append('output_format', 'png');

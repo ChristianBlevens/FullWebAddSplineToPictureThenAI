@@ -1,87 +1,214 @@
-// Add event listener in a safer way that doesn't throw an error
-// The original version tried to add an event listener immediately, but the canvas might not exist yet
-// Instead, we'll attach the event listener after we've verified the canvas exists
 
-function setupCanvasListeners() {
-    // Add interaction events to both canvas and lights overlay canvas
-    elements.canvas.addEventListener('mousedown', handleInteractionStart);
-    elements.canvas.addEventListener('mouseup', handleInteractionEnd);
-    elements.canvas.addEventListener('touchstart', handleInteractionStart);
-    elements.canvas.addEventListener('touchend', handleInteractionEnd);
-    
-    // Add the same events to the lights overlay canvas
-    elements.lightsOverlayCanvas.addEventListener('mousedown', handleInteractionStart);
-    elements.lightsOverlayCanvas.addEventListener('mouseup', handleInteractionEnd);
-    elements.lightsOverlayCanvas.addEventListener('touchstart', handleInteractionStart);
-    elements.lightsOverlayCanvas.addEventListener('touchend', handleInteractionEnd);
-	
-    //console.log('Canvas event listeners set up');
+// State management for points and splines
+if (!state.dataStructure) {
+    state.dataStructure = {
+        nextPointId: 1,       // Auto-incrementing ID for points
+        nextSplineId: 1,      // Auto-incrementing ID for splines
+        points: {},           // Map of pointId -> {id, x, y}
+        splines: {},          // Map of splineId -> {id, pointIds: []}
+        networks: [],         // Array of spline network objects
+        pointsInUse: {},      // Map of pointId -> count of splines using the point
+        selectedPointId: null // Currently selected point
+    };
 }
 
-// Variables to track interaction timing
-let interactionStartTime = 0;
-let interactionStartPoint = null;
+// Action history for undo functionality
+if (!state.actionHistory) {
+    state.actionHistory = [];
+}
 
-// Unified handler for interaction start (mousedown or touchstart)
+// Action types for history
+const ActionTypes = {
+    CREATE_POINT: 'CREATE_POINT',
+    CREATE_SPLINE: 'CREATE_SPLINE',
+    ADD_POINT_TO_SPLINE: 'ADD_POINT_TO_SPLINE',
+    MOVE_POINT: 'MOVE_POINT'
+};
+
+// Spline creation state
+if (!state.splineCreation) {
+    state.splineCreation = {
+        activeSplineId: null,        // Currently active spline for addition
+        justCreatedNewSpline: false  // Flag to track if we just created a new spline
+    };
+}
+
+// Initialize elements object if not already done
+if (typeof elements === 'undefined') {
+    console.warn('Elements object not initialized. Creating default empty object.');
+    window.elements = {};
+}
+
+// Ensure canvas and context are properly initialized
+function ensureCanvasContext() {
+    if (!elements.canvas) {
+        console.warn('Canvas element not found in elements object');
+        return false;
+    }
+    
+    if (!elements.ctx) {
+        console.log('Canvas context not initialized. Getting context from canvas.');
+        elements.ctx = elements.canvas.getContext('2d');
+        if (!elements.ctx) {
+            console.error('Failed to get canvas context');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Set up canvas event listeners
+function setupCanvasListeners() {
+    if (!elements.canvas || !elements.lightsOverlayCanvas) {
+        console.error('Canvas elements not available for event setup');
+        return;
+    }
+    
+    const canvases = [elements.canvas, elements.lightsOverlayCanvas];
+    
+    // Add same events to both canvases
+    canvases.forEach(canvas => {
+        canvas.addEventListener('mousedown', handleInteractionStart);
+        canvas.addEventListener('mousemove', handleInteractionMove);
+        canvas.addEventListener('mouseup', handleInteractionEnd);
+        canvas.addEventListener('touchstart', handleInteractionStart);
+        canvas.addEventListener('touchmove', handleInteractionMove);
+        canvas.addEventListener('touchend', handleInteractionEnd);
+    });
+    
+    console.log('Canvas event listeners set up');
+}
+
+// Variables to track interaction
+let interactionStartTime = 0;
+let isDragging = false;
+let draggedPointId = null;
+let originalPointPosition = null;
+
+// Handle interaction start (mousedown or touchstart)
 function handleInteractionStart(e) {
     if (state.inEnhanceMode) return;
     
-    //console.log('Interaction start detected');
-    
-    // Determine if this is a touch or mouse event and extract position
-    let x, y;
-    const rect = (e.currentTarget || e.target).getBoundingClientRect();
+    // Get position from event
+    const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = elements.canvas.width / rect.width;
     const scaleY = elements.canvas.height / rect.height;
     
+    let x, y;
     if (e.type === 'touchstart') {
-        // Prevent default behavior for touch to avoid scrolling
         e.preventDefault();
-        
         if (e.touches.length > 0) {
             const touch = e.touches[0];
             x = (touch.clientX - rect.left) * scaleX;
             y = (touch.clientY - rect.top) * scaleY;
         } else {
-            return; // No touch points
+            return;
         }
     } else {
-        // Mouse event
         x = (e.clientX - rect.left) * scaleX;
         y = (e.clientY - rect.top) * scaleY;
     }
     
-    // Record start time and position
+    // Record start time and check for existing point
     interactionStartTime = Date.now();
-    interactionStartPoint = { x, y };
-    //console.log(`Interaction started at (${x}, ${y})`);
+    const existingPointId = findExistingPointId(x, y);
+    
+    if (existingPointId) {
+        // Prepare for drag operation
+        draggedPointId = existingPointId;
+        const point = state.dataStructure.points[existingPointId];
+        originalPointPosition = { x: point.x, y: point.y };
+    } else {
+        draggedPointId = null;
+        originalPointPosition = null;
+    }
 }
 
-// Unified handler for interaction end (mouseup or touchend)
+// Handle interaction move (mousemove or touchmove)
+function handleInteractionMove(e) {
+    if (state.inEnhanceMode) return;
+    
+    // Check if we should start dragging
+    const interactionDuration = Date.now() - interactionStartTime;
+    
+    // Start dragging after 200ms and if we have a valid point
+    if (interactionDuration > 200 && draggedPointId && !isDragging) {
+        isDragging = true;
+    }
+    
+    // If dragging, update point position
+    if (isDragging && draggedPointId) {
+        // Get current position
+        const rect = e.currentTarget.getBoundingClientRect();
+        const scaleX = elements.canvas.width / rect.width;
+        const scaleY = elements.canvas.height / rect.height;
+        
+        let x, y;
+        if (e.type === 'touchmove') {
+            e.preventDefault();
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                x = (touch.clientX - rect.left) * scaleX;
+                y = (touch.clientY - rect.top) * scaleY;
+            } else {
+                return;
+            }
+        } else {
+            x = (e.clientX - rect.left) * scaleX;
+            y = (e.clientY - rect.top) * scaleY;
+        }
+        
+        // Snap to line
+        const snappedPoint = snapToLine(x, y);
+        
+        // Update point position
+        const point = state.dataStructure.points[draggedPointId];
+        if (point) {
+            point.x = snappedPoint.x;
+            point.y = snappedPoint.y;
+            
+            // Record action for undo
+            if (!state.actionHistory.find(action => 
+                action.type === ActionTypes.MOVE_POINT && 
+                action.pointId === draggedPointId)) {
+                
+                state.actionHistory.push({
+                    type: ActionTypes.MOVE_POINT,
+                    pointId: draggedPointId,
+                    fromX: originalPointPosition.x,
+                    fromY: originalPointPosition.y,
+                    toX: snappedPoint.x,
+                    toY: snappedPoint.y
+                });
+            }
+            
+            // Redraw
+            redrawCanvas();
+        }
+    }
+}
+
+// Handle interaction end (mouseup or touchend)
 function handleInteractionEnd(e) {
-    if (state.inEnhanceMode || !interactionStartPoint) return;
+    if (state.inEnhanceMode) return;
     
-    //console.log('Interaction end detected');
-    
-    // Determine if this is a touch or mouse event and extract position
-    let x, y;
-    const rect = (e.currentTarget || e.target).getBoundingClientRect();
+    // Get position from event
+    const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = elements.canvas.width / rect.width;
     const scaleY = elements.canvas.height / rect.height;
     
+    let x, y;
     if (e.type === 'touchend') {
-        // Prevent default behavior for touch
         e.preventDefault();
-        
         if (e.changedTouches.length > 0) {
             const touch = e.changedTouches[0];
             x = (touch.clientX - rect.left) * scaleX;
             y = (touch.clientY - rect.top) * scaleY;
         } else {
-            return; // No touch points
+            return;
         }
     } else {
-        // Mouse event
         x = (e.clientX - rect.left) * scaleX;
         y = (e.clientY - rect.top) * scaleY;
     }
@@ -89,180 +216,275 @@ function handleInteractionEnd(e) {
     // Calculate interaction duration
     const interactionDuration = Date.now() - interactionStartTime;
     
-    //console.log(`Interaction ended at (${x}, ${y}), duration: ${interactionDuration}ms`);
+    // If dragging, end drag operation
+    if (isDragging) {
+        isDragging = false;
+        draggedPointId = null;
+        originalPointPosition = null;
+        
+        // Update networks and redraw
+        buildSplineNetworks();
+        redrawCanvas();
+        return;
+    }
     
-    // Process the interaction
-    processCanvasInteraction(x, y, interactionDuration);
+    // If not dragging, process as click
+    const isShortPress = interactionDuration < 200;
+    
+    if (isShortPress) {
+        const existingPointId = findExistingPointId(x, y);
+        
+        let finalPoint;
+        if (existingPointId) {
+            // Use existing point
+            const point = state.dataStructure.points[existingPointId];
+            finalPoint = { 
+                id: existingPointId,
+                x: point.x, 
+                y: point.y 
+            };
+        } else {
+            // Create new point with snapping
+            const snappedCoords = snapToLine(x, y);
+            const newPointId = createPoint(snappedCoords.x, snappedCoords.y);
+            finalPoint = {
+                id: newPointId,
+                x: snappedCoords.x,
+                y: snappedCoords.y
+            };
+        }
+        
+        // Handle the point placement
+        handlePointPlacement(finalPoint);
+    }
     
     // Reset tracking variables
     interactionStartTime = 0;
-    interactionStartPoint = null;
+    isDragging = false;
+    draggedPointId = null;
 }
 
-// Process canvas interaction
-function processCanvasInteraction(x, y, duration) {
-    //console.log(`Processing interaction at (${x}, ${y}), duration: ${duration}ms`);
+// Create a new point
+function createPoint(x, y) {
+    // Check for existing point at same location
+    const existingPointId = findExactPointMatch(x, y);
+    if (existingPointId) {
+        return existingPointId;
+    }
     
-	const shouldSnap = duration < 250;
-	
-	var existingPointInfo = null;
-	
-    // Find any existing point at this location
-	if (shouldSnap) {
-		existingPointInfo = findExistingPoint(x, y);
-	}
+    // Create new point
+    const pointId = `p${state.dataStructure.nextPointId++}`;
+    state.dataStructure.points[pointId] = {
+        id: pointId,
+        x: x,
+        y: y
+    };
     
-    // Determine if and how to snap the point
-    let finalPoint;
+    // Initialize usage count
+    state.dataStructure.pointsInUse[pointId] = 0;
     
-    if (existingPointInfo) {
-        // If we clicked near an existing point, use that point's exact coordinates
-        const { splineIndex, pointIndex } = existingPointInfo;
-        finalPoint = { 
-            x: state.splines[splineIndex][pointIndex].x, 
-            y: state.splines[splineIndex][pointIndex].y 
-        };
-        //console.log(`Found existing point at (${finalPoint.x}, ${finalPoint.y}), prioritizing over line snapping`);
+    // Record action
+    state.actionHistory.push({
+        type: ActionTypes.CREATE_POINT,
+        pointId: pointId,
+        x: x,
+        y: y
+    });
+    
+    return pointId;
+}
+
+// Create a new spline
+function createSpline(pointIds) {
+    const splineId = `s${state.dataStructure.nextSplineId++}`;
+    
+    state.dataStructure.splines[splineId] = {
+        id: splineId,
+        pointIds: [...pointIds]
+    };
+    
+    // Update point usage counts
+    pointIds.forEach(pointId => {
+        if (state.dataStructure.pointsInUse[pointId] === undefined) {
+            state.dataStructure.pointsInUse[pointId] = 0;
+        }
+        state.dataStructure.pointsInUse[pointId]++;
+    });
+    
+    // Record action
+    state.actionHistory.push({
+        type: ActionTypes.CREATE_SPLINE,
+        splineId: splineId,
+        pointIds: [...pointIds]
+    });
+    
+    return splineId;
+}
+
+// Add a point to an existing spline
+function addPointToSpline(splineId, pointId, atStart = false) {
+    const spline = state.dataStructure.splines[splineId];
+    if (!spline) return false;
+    
+    // Add the point
+    if (atStart) {
+        spline.pointIds.unshift(pointId);
     } else {
-        if (shouldSnap) {
-            finalPoint = snapToLine(x, y);
-            
-            // Visualization for debugging
-            if (elements.lightsCtx) {
-                elements.lightsCtx.beginPath();
-                elements.lightsCtx.arc(x, y, 3, 0, Math.PI * 2);
-                elements.lightsCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-                elements.lightsCtx.fill();
-                
-                // Draw a line from original to snapped point if they're different
-                if (finalPoint.x !== x || finalPoint.y !== y) {
-                    elements.lightsCtx.beginPath();
-                    elements.lightsCtx.moveTo(x, y);
-                    elements.lightsCtx.lineTo(finalPoint.x, finalPoint.y);
-                    elements.lightsCtx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
-                    elements.lightsCtx.lineWidth = 1;
-                    elements.lightsCtx.stroke();
-                    
-                    // Draw a circle at the snapped point
-                    elements.lightsCtx.beginPath();
-                    elements.lightsCtx.arc(finalPoint.x, finalPoint.y, 3, 0, Math.PI * 2);
-                    elements.lightsCtx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-                    elements.lightsCtx.fill();
-                }
-                
-                // Clear these debug visuals after 1 second
-                setTimeout(() => {
-                    if (elements.lightsCtx) {
-                        elements.lightsCtx.clearRect(0, 0, elements.lightsOverlayCanvas.width, elements.lightsOverlayCanvas.height);
-                    }
-                }, 1000);
-            }
-        } else {
-            //console.log("Interaction too long, not snapping");
-            finalPoint = { x, y };
-        }
+        spline.pointIds.push(pointId);
     }
     
-    // Pass the already found existing point info to avoid duplicate checks
-    handlePointPlacement(finalPoint, existingPointInfo);
+    // Update point usage count
+    if (state.dataStructure.pointsInUse[pointId] === undefined) {
+        state.dataStructure.pointsInUse[pointId] = 0;
+    }
+    state.dataStructure.pointsInUse[pointId]++;
+    
+    // Record action
+    state.actionHistory.push({
+        type: ActionTypes.ADD_POINT_TO_SPLINE,
+        splineId: splineId,
+        pointId: pointId,
+        atStart: atStart
+    });
+    
+    return true;
 }
 
-// This function now accepts the existingPointInfo to avoid duplicate checks
-function handlePointPlacement(point, existingPointInfo = null) {
-    // Use the passed existingPointInfo if available, or initialize it as null
-    const existingPoint = existingPointInfo;
+// Find exact point match
+function findExactPointMatch(x, y) {
+    const EXACT_THRESHOLD = 0.5;
     
-    if (existingPoint) {
-        // Clicked on existing point
-        const { splineIndex, pointIndex, isEndpoint } = existingPoint;
+    for (const pointId in state.dataStructure.points) {
+        const point = state.dataStructure.points[pointId];
+        const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
         
-        if (state.lastClickedPoint) {
-            // Second click after selecting a point - ignore if clicking same point again
-            if (state.lastClickedPoint.splineIndex === splineIndex && 
-                state.lastClickedPoint.pointIndex === pointIndex) {
-                return;
-            }
-            
-            // Reset last clicked point
-            state.lastClickedPoint = null;
-        } else {
-            // First click on an existing point
-            if (isEndpoint) {
-                // Clicked on endpoint, prepare to extend this spline
-                state.activeSplineIndex = splineIndex;
-                state.lastClickedPoint = { splineIndex, pointIndex, isEndpoint };
-            } else {
-                // Clicked on middle point, start new spline from here
-                state.splines.push([{ 
-                    x: state.splines[splineIndex][pointIndex].x, 
-                    y: state.splines[splineIndex][pointIndex].y 
-                }]);
-                state.activeSplineIndex = state.splines.length - 1;
-                state.lastClickedPoint = null;
-            }
-            redrawCanvas();
-            return;
-        }
-    }
-    
-    // Normal click (not on existing point)
-    if (state.lastClickedPoint) {
-        // Second click after selecting an endpoint
-        const { splineIndex, pointIndex, isEndpoint } = state.lastClickedPoint;
-        
-        // Add to beginning or end of spline
-        if (pointIndex === 0) {
-            // Add to beginning
-            state.splines[splineIndex].unshift(point);
-        } else {
-            // Add to end
-            state.splines[splineIndex].push(point);
-        }
-        
-        state.lastClickedPoint = null;
-    } else if (state.activeSplineIndex >= 0 && state.splines[state.activeSplineIndex].length === 1) {
-        // Adding second point to active spline
-        state.splines[state.activeSplineIndex].push(point);
-    } else {
-        // Starting a new spline
-        state.splines.push([point]);
-        state.activeSplineIndex = state.splines.length - 1;
-    }
-    
-    // Redraw and update buttons
-    redrawCanvas();
-    updateButtonStates();
-}
-
-function findExistingPoint(x, y) {
-    const threshold = 20; // Distance threshold for clicking on a point
-    
-    for (let splineIndex = 0; splineIndex < state.splines.length; splineIndex++) {
-        const spline = state.splines[splineIndex];
-        
-        for (let pointIndex = 0; pointIndex < spline.length; pointIndex++) {
-            const point = spline[pointIndex];
-            const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
-            
-            if (distance <= threshold) {
-                // Determine if it's an endpoint
-                const isEndpoint = pointIndex === 0 || pointIndex === spline.length - 1;
-                return { splineIndex, pointIndex, isEndpoint };
-            }
+        if (distance <= EXACT_THRESHOLD) {
+            return pointId;
         }
     }
     
     return null;
 }
 
-// Updated function to more accurately snap to lines in the line data
-function snapToLine(x, y) {
-    if (!state.lineData || !state.lineData.lines || !Array.isArray(state.lineData.lines)) {
-        //console.log("No line data available for snapping");
-        return { x, y }; // Return original point if no line data available
+// Find existing point near coordinates
+function findExistingPointId(x, y) {
+    const threshold = 20; // Distance threshold for clicking
+    
+    for (const pointId in state.dataStructure.points) {
+        const point = state.dataStructure.points[pointId];
+        const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
+        
+        if (distance <= threshold) {
+            return pointId;
+        }
     }
     
-    // Scale factor to convert from original image size to our canvas size
+    return null;
+}
+
+// Handle point placement for spline creation
+function handlePointPlacement(pointObj) {
+    const pointId = pointObj.id;
+    
+    // Check if user clicked an existing point
+    const existingPoint = state.dataStructure.points[pointId];
+    if (existingPoint && state.dataStructure.pointsInUse[pointId] > 0) {
+        // Select this point
+        state.dataStructure.selectedPointId = pointId;
+        state.splineCreation.justCreatedNewSpline = false;
+        
+        // Find a spline containing this point to make active
+        for (const splineId in state.dataStructure.splines) {
+            const spline = state.dataStructure.splines[splineId];
+            if (spline.pointIds.includes(pointId)) {
+                state.splineCreation.activeSplineId = splineId;
+                break;
+            }
+        }
+        
+        redrawCanvas();
+        updateButtonStates();
+        return;
+    }
+    
+    // User created a new point
+    
+    // If we have a selected point, connect to it
+    if (state.dataStructure.selectedPointId) {
+        const selectedPointId = state.dataStructure.selectedPointId;
+        
+        // Find splines containing the selected point
+        const connectedSplines = [];
+        for (const splineId in state.dataStructure.splines) {
+            const spline = state.dataStructure.splines[splineId];
+            if (spline.pointIds.includes(selectedPointId)) {
+                connectedSplines.push({
+                    splineId: splineId,
+                    spline: spline,
+                    isStart: spline.pointIds[0] === selectedPointId,
+                    isEnd: spline.pointIds[spline.pointIds.length - 1] === selectedPointId
+                });
+            }
+        }
+        
+        // Check if the selected point is an endpoint of any spline
+        const endpointSplines = connectedSplines.filter(info => info.isStart || info.isEnd);
+        
+        if (endpointSplines.length > 0) {
+            // Extend an existing spline
+            const splineInfo = endpointSplines[0];
+            if (splineInfo.isStart) {
+                addPointToSpline(splineInfo.splineId, pointId, true);
+            } else {
+                addPointToSpline(splineInfo.splineId, pointId, false);
+            }
+            
+            state.splineCreation.activeSplineId = splineInfo.splineId;
+        } else {
+            // Create a new branching spline
+            createSpline([selectedPointId, pointId]);
+            state.splineCreation.activeSplineId = `s${state.dataStructure.nextSplineId - 1}`;
+            state.splineCreation.justCreatedNewSpline = true;
+        }
+        
+        // Clear the selected point
+        state.dataStructure.selectedPointId = null;
+    } 
+    // If we just created a new spline and this is the next point, continue that spline
+    else if (state.splineCreation.justCreatedNewSpline && 
+             state.splineCreation.activeSplineId) {
+        
+        const splineId = state.splineCreation.activeSplineId;
+        const spline = state.dataStructure.splines[splineId];
+        
+        if (spline) {
+            // Add to end of the active spline
+            addPointToSpline(splineId, pointId, false);
+            
+            // Reset the auto-continuation flag
+            state.splineCreation.justCreatedNewSpline = false;
+        }
+    } 
+    // Create a new spline
+    else {
+        createSpline([pointId]);
+        state.splineCreation.activeSplineId = `s${state.dataStructure.nextSplineId - 1}`;
+        state.splineCreation.justCreatedNewSpline = true;
+    }
+    
+    // Build spline networks
+    buildSplineNetworks();
+    redrawCanvas();
+    updateButtonStates();
+}
+
+// Snap to line function
+function snapToLine(x, y) {
+    if (!state.lineData || !state.lineData.lines || !Array.isArray(state.lineData.lines)) {
+        return { x, y }; // Return original if no line data
+    }
+    
+    // Scale for canvas
     const canvasWidth = elements.canvas.width;
     const canvasHeight = elements.canvas.height;
     const origWidth = state.lineData.width || 400;
@@ -273,182 +495,336 @@ function snapToLine(x, y) {
     let closestDistance = Infinity;
     let closestPoint = { x, y };
     
-    // For debugging
-    //console.log(`Checking snap point (${x}, ${y})`);
-    //console.log(`Line data has ${state.lineData.lines.length} lines`);
-    
-    // Distance threshold - exactly 20 pixels
+    // Distance threshold for snapping
     const SNAP_THRESHOLD = 20;
     
     // Check each line
     for (let i = 0; i < state.lineData.lines.length; i++) {
         const line = state.lineData.lines[i];
         
-        // Scale the line points to match canvas size
+        // Scale line points
         const x1 = line.x1 * scaleX;
         const y1 = line.y1 * scaleY;
         const x2 = line.x2 * scaleX;
         const y2 = line.y2 * scaleY;
         
-        // Segment length squared (for checking degenerate segments)
+        // Skip very short lines
         const segLenSq = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-        
-        // Skip if the line segment is too short (degenerate)
         if (segLenSq < 0.1) continue;
         
-        // Calculate the projection of point onto line
+        // Project point onto line
         const t = ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / segLenSq;
         
-        // Calculate closest point on line segment
+        // Calculate closest point on line
         let closestX, closestY;
         
         if (t < 0) {
-            // Closest to endpoint 1
             closestX = x1;
             closestY = y1;
         } else if (t > 1) {
-            // Closest to endpoint 2
             closestX = x2;
             closestY = y2;
         } else {
-            // Closest to somewhere on the segment
             closestX = x1 + t * (x2 - x1);
             closestY = y1 + t * (y2 - y1);
         }
         
-        // Calculate squared distance to closest point on segment
+        // Calculate distance
         const distance = Math.sqrt((x - closestX) * (x - closestX) + (y - closestY) * (y - closestY));
         
-        // Debug log for this line
-        //console.log(`Line ${i}: (${x1},${y1}) to (${x2},${y2}), distance: ${distance.toFixed(2)}`);
-        
-        // If the distance is within our threshold and it's closer than any previous match
+        // If closest so far and within threshold
         if (distance <= SNAP_THRESHOLD && distance < closestDistance) {
             closestDistance = distance;
             closestPoint = { x: closestX, y: closestY };
-            //console.log(`New closest point: (${closestX.toFixed(2)}, ${closestY.toFixed(2)}), distance: ${distance.toFixed(2)}`);
         }
     }
     
-    // If we didn't snap, log that information
-    if (closestDistance === Infinity) {
-        //console.log("No lines within snapping threshold");
-        return { x, y };
-    }
-    
-    //console.log(`Final snap result: point (${x}, ${y}) → (${closestPoint.x.toFixed(2)}, ${closestPoint.y.toFixed(2)}), distance: ${closestDistance.toFixed(2)}`);
     return closestPoint;
 }
 
+// Redraw the canvas
 function redrawCanvas() {
-    // Always re-render with lights if we have splines
-    if (state.splines.some(spline => spline.length >= 2)) {
-        // Just trigger a re-render of the animation loop,
-        // which will handle showing the lights
-        // The animation is always running when in editor mode
-    } else {
-        // Draw directly on the main canvas for now
-        // Clear the canvas
-        ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
-        
-        // Redraw the original image
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
-            
-            // Draw straight lines for any single point splines
-            for (const spline of state.splines) {
-                if (spline.length === 1) {
-                    // For single points, just draw the point
-                    ctx.beginPath();
-                    ctx.arc(spline[0].x, spline[0].y, 5, 0, Math.PI * 2);
-                    ctx.fillStyle = 'red';
-                    ctx.fill();
-                }
-            }
-            
-            // Highlight the last clicked point if any
-            if (state.lastClickedPoint) {
-                const { splineIndex, pointIndex } = state.lastClickedPoint;
-                const point = state.splines[splineIndex][pointIndex];
-                
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
-                ctx.strokeStyle = '#00ffff';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-        };
-        img.src = state.fullResImage;
-    }
-}
-
-function updateButtonStates() {
-    // Count total points in all splines
-    const totalPoints = state.splines.reduce((sum, spline) => sum + spline.length, 0);
-    
-    // Clear button enabled if we have any points
-    elements.clearBtn.disabled = totalPoints === 0;
-    
-    // Undo button enabled if we have any points
-    elements.undoBtn.disabled = totalPoints === 0;
-    
-    // Enhance button enabled if we have at least one spline with 2+ points
-    const hasCompleteSpline = state.splines.some(spline => spline.length >= 2);
-    elements.enhanceBtn.disabled = !hasCompleteSpline;
-}
-
-elements.undoBtn.addEventListener('click', undoLastAction);
-
-function undoLastAction() {
-    if (state.splines.length === 0) return;
-    
-    // If we have a last clicked point, clear it
-    if (state.lastClickedPoint) {
-        state.lastClickedPoint = null;
-        redrawCanvas();
+    // First, ensure canvas and context are available
+    if (!ensureCanvasContext()) {
+        console.error('Cannot redraw: canvas or context not available');
         return;
     }
     
-    // If we have an active spline with only one point, remove it entirely
-    if (state.activeSplineIndex >= 0 && 
-        state.splines[state.activeSplineIndex].length === 1) {
-        state.splines.splice(state.activeSplineIndex, 1);
-        state.activeSplineIndex = state.splines.length - 1;
-    } 
-    // If we have an active spline with multiple points, remove the last point
-    else if (state.activeSplineIndex >= 0 && 
-            state.splines[state.activeSplineIndex].length > 1) {
-        state.splines[state.activeSplineIndex].pop();
+    // Check if we have complete splines (with at least 2 points)
+    const hasCompleteSplines = Object.values(state.dataStructure.splines).some(
+        spline => spline.pointIds.length >= 2
+    );
+    
+    // If we have complete splines, let the animation loop handle rendering
+    if (!hasCompleteSplines) {
+        // Draw directly on the main canvas
+        elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
         
-        // If we've removed all but one point, keep the active index
-        if (state.splines[state.activeSplineIndex].length === 0) {
-            state.splines.splice(state.activeSplineIndex, 1);
-            state.activeSplineIndex = state.splines.length - 1;
+        // Draw the original image if available
+        if (state.fullResImage) {
+            const img = new Image();
+            img.onload = () => {
+                elements.ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
+            };
+            img.src = state.fullResImage;
         }
-    } 
-    // Otherwise remove the last point from the last spline
-    else if (state.splines.length > 0) {
-        const lastSplineIndex = state.splines.length - 1;
+    }
+}
+
+// Update button states based on current data
+function updateButtonStates() {
+    // Check if buttons exist before updating them
+    const buttonsAvailable = elements.clearBtn && elements.undoBtn && elements.enhanceBtn;
+    if (!buttonsAvailable) {
+        console.warn('Button elements not available for state update');
+        return;
+    }
+    
+    // Count total points in use
+    const totalPointsInUse = Object.values(state.dataStructure.pointsInUse)
+        .reduce((sum, count) => sum + (count > 0 ? 1 : 0), 0);
+    
+    // Clear button enabled if we have any points in use
+    elements.clearBtn.disabled = totalPointsInUse === 0;
+    
+    // Undo button enabled if we have any history
+    elements.undoBtn.disabled = state.actionHistory.length === 0;
+    
+    // Enhance button enabled if we have at least one spline with 2+ points
+    const hasCompleteSpline = Object.values(state.dataStructure.splines).some(
+        spline => spline.pointIds.length >= 2
+    );
+    elements.enhanceBtn.disabled = !hasCompleteSpline;
+}
+
+// Undo the last action
+function undoLastAction() {
+    if (state.actionHistory.length === 0) return;
+    
+    // Get the last action
+    const lastAction = state.actionHistory.pop();
+    
+    switch (lastAction.type) {
+        case ActionTypes.CREATE_POINT:
+            // Remove point if not in use
+            if (state.dataStructure.pointsInUse[lastAction.pointId] === 0) {
+                delete state.dataStructure.points[lastAction.pointId];
+                delete state.dataStructure.pointsInUse[lastAction.pointId];
+            }
+            break;
+            
+        case ActionTypes.CREATE_SPLINE:
+            // Remove the spline
+            const spline = state.dataStructure.splines[lastAction.splineId];
+            if (spline) {
+                // Decrease usage count for each point
+                spline.pointIds.forEach(pointId => {
+                    if (state.dataStructure.pointsInUse[pointId] > 0) {
+                        state.dataStructure.pointsInUse[pointId]--;
+                    }
+                });
+                
+                // Remove the spline
+                delete state.dataStructure.splines[lastAction.splineId];
+                
+                // Clear active spline if needed
+                if (state.splineCreation.activeSplineId === lastAction.splineId) {
+                    state.splineCreation.activeSplineId = null;
+                    state.splineCreation.justCreatedNewSpline = false;
+                }
+            }
+            break;
+            
+        case ActionTypes.ADD_POINT_TO_SPLINE:
+            // Remove the point from the spline
+            const targetSpline = state.dataStructure.splines[lastAction.splineId];
+            if (targetSpline) {
+                // Remove from the beginning or end
+                if (lastAction.atStart) {
+                    targetSpline.pointIds.shift();
+                } else {
+                    targetSpline.pointIds.pop();
+                }
+                
+                // Decrease usage count
+                if (state.dataStructure.pointsInUse[lastAction.pointId] > 0) {
+                    state.dataStructure.pointsInUse[lastAction.pointId]--;
+                }
+                
+                // Remove entire spline if fewer than 2 points
+                if (targetSpline.pointIds.length < 2) {
+                    // Decrease usage count for remaining point
+                    const remainingPointId = targetSpline.pointIds[0];
+                    if (state.dataStructure.pointsInUse[remainingPointId] > 0) {
+                        state.dataStructure.pointsInUse[remainingPointId]--;
+                    }
+                    
+                    // Remove the spline
+                    delete state.dataStructure.splines[lastAction.splineId];
+                    
+                    // Clear active spline if needed
+                    if (state.splineCreation.activeSplineId === lastAction.splineId) {
+                        state.splineCreation.activeSplineId = null;
+                        state.splineCreation.justCreatedNewSpline = false;
+                    }
+                }
+            }
+            break;
+            
+        case ActionTypes.MOVE_POINT:
+            // Restore original position
+            const point = state.dataStructure.points[lastAction.pointId];
+            if (point) {
+                point.x = lastAction.fromX;
+                point.y = lastAction.fromY;
+            }
+            break;
+    }
+    
+    // Clear selected point
+    state.dataStructure.selectedPointId = null;
+    
+    // Update networks and UI
+    buildSplineNetworks();
+    redrawCanvas();
+    updateButtonStates();
+}
+
+// Clear all points and splines
+function clearPoints() {
+    // Reset data structures
+    state.dataStructure.points = {};
+    state.dataStructure.splines = {};
+    state.dataStructure.pointsInUse = {};
+    state.dataStructure.selectedPointId = null;
+    state.splineCreation.activeSplineId = null;
+    state.splineCreation.justCreatedNewSpline = false;
+    
+    // Reset networks
+    state.dataStructure.networks = [];
+    
+    // Clear action history
+    state.actionHistory = [];
+    
+    // Update UI
+    redrawCanvas();
+    updateButtonStates();
+}
+
+// Build networks of connected splines
+function buildSplineNetworks() {
+    // Reset networks
+    state.dataStructure.networks = [];
+    
+    // Create point-to-splines map
+    const pointToSplines = {};
+    
+    for (const splineId in state.dataStructure.splines) {
+        const spline = state.dataStructure.splines[splineId];
         
-        if (state.splines[lastSplineIndex].length > 1) {
-            state.splines[lastSplineIndex].pop();
-        } else {
-            state.splines.pop();
-            state.activeSplineIndex = state.splines.length - 1;
+        for (const pointId of spline.pointIds) {
+            if (!pointToSplines[pointId]) {
+                pointToSplines[pointId] = [];
+            }
+            pointToSplines[pointId].push(splineId);
         }
     }
     
-    redrawCanvas();
-    updateButtonStates();
+    // Track processed splines
+    const processedSplines = new Set();
+    
+    // Process each spline to build networks
+    for (const splineId in state.dataStructure.splines) {
+        // Skip if already processed
+        if (processedSplines.has(splineId)) continue;
+        
+        // Create a new network
+        const network = {
+            id: `n${state.dataStructure.networks.length + 1}`,
+            splineIds: [],
+            pointIds: new Set(),
+            totalLength: 0,
+            startPointId: null,
+            endPointIds: []
+        };
+        
+        // Use queue for breadth-first traversal
+        const queue = [splineId];
+        
+        while (queue.length > 0) {
+            const currentSplineId = queue.shift();
+            
+            // Skip if already processed
+            if (processedSplines.has(currentSplineId)) continue;
+            
+            // Mark as processed
+            processedSplines.add(currentSplineId);
+            
+            // Add to network
+            network.splineIds.push(currentSplineId);
+            
+            // Process spline points
+            const currentSpline = state.dataStructure.splines[currentSplineId];
+            if (currentSpline) {
+                // Calculate spline length
+                for (let i = 0; i < currentSpline.pointIds.length - 1; i++) {
+                    const point1 = state.dataStructure.points[currentSpline.pointIds[i]];
+                    const point2 = state.dataStructure.points[currentSpline.pointIds[i + 1]];
+                    if (point1 && point2) {
+                        const segmentLength = Math.sqrt(
+                            Math.pow(point2.x - point1.x, 2) + 
+                            Math.pow(point2.y - point1.y, 2)
+                        );
+                        network.totalLength += segmentLength;
+                    }
+                }
+                
+                // Add points to network
+                for (const pointId of currentSpline.pointIds) {
+                    network.pointIds.add(pointId);
+                    
+                    // Queue connected splines
+                    const connectedSplines = pointToSplines[pointId] || [];
+                    for (const connectedSplineId of connectedSplines) {
+                        if (!processedSplines.has(connectedSplineId)) {
+                            queue.push(connectedSplineId);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Convert pointIds Set to Array
+        network.pointIds = Array.from(network.pointIds);
+        
+        // Determine start and end points
+        if (network.splineIds.length > 0) {
+            // Start point is first point of first spline
+            const firstSpline = state.dataStructure.splines[network.splineIds[0]];
+            if (firstSpline && firstSpline.pointIds.length > 0) {
+                network.startPointId = firstSpline.pointIds[0];
+            }
+            
+            // Find endpoints (points in only one spline)
+            for (const pointId of network.pointIds) {
+                const connectedSplines = pointToSplines[pointId] || [];
+                if (connectedSplines.length === 1) {
+                    // Check if it's an endpoint within its spline
+                    const spline = state.dataStructure.splines[connectedSplines[0]];
+                    const isFirst = spline.pointIds[0] === pointId;
+                    const isLast = spline.pointIds[spline.pointIds.length - 1] === pointId;
+                    if (isFirst || isLast) {
+                        network.endPointIds.push(pointId);
+                    }
+                }
+            }
+        }
+        
+        // Add the network
+        state.dataStructure.networks.push(network);
+    }
 }
 
+// Set up event handlers
+elements.undoBtn.addEventListener('click', undoLastAction);
 elements.clearBtn.addEventListener('click', clearPoints);
-
-function clearPoints() {
-    state.splines = [];
-    state.activeSplineIndex = -1;
-    state.lastClickedPoint = null;
-    redrawCanvas();
-    updateButtonStates();
-}
