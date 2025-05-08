@@ -220,8 +220,6 @@ const ChristmasLightsApp = (function() {
         getState: () => ({ ...appState }),
         
         // DOM element access 
-        // (Note: In a real refactor, this would be more controlled, 
-        // but we're keeping maximum compatibility with existing code)
         getElements: () => domElements,
         
         // Utility functions made available to other modules
@@ -234,7 +232,6 @@ const ChristmasLightsApp = (function() {
 })();
 
 // Export global objects for compatibility with existing code
-// In a full refactor, we would eliminate these globals
 window.state = ChristmasLightsApp.getState();
 window.elements = ChristmasLightsApp.getElements();
 
