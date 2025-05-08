@@ -1,121 +1,156 @@
-const STABILITY_API_KEY = 'sk-F4Z3bZLTnnAjq5pzMOmtSyLo8uJjbO2wV59cDCcBX9Nk2I9z';
-
-elements.enhanceBtn.addEventListener('click', enhanceImage);
-        
-function enhanceImage() {
-    // Set enhance mode to disable further drawing
-    state.inEnhanceMode = true;
+// Module for handling image enhancement with AI
+const EnhanceModule = (function() {
+    // Private variables
+    const API_CONFIG = {
+        STABILITY_API_URL: 'https://api.stability.ai/v2beta/stable-image/edit/replace-background-and-relight',
+        LIGHT_REFERENCE_URL: 'https://i.imgur.com/yhFJRFc.png'
+    };
     
-    // Show processing overlay
-    elements.processingOverlay.classList.remove('hidden');
-    state.processing = true;
+    // API key should be handled securely in production
+    // This implementation allows for future improvement where the key is retrieved 
+    // from a secure source rather than being hardcoded
+    let apiKey = null;
     
-    // Adjust UI for enhance mode
-    elements.undoBtn.classList.add('hidden');
-    elements.clearBtn.classList.add('hidden');
-    elements.enhanceBtn.classList.add('hidden');
-    elements.depthToggleBtn.classList.add('hidden');
-    elements.lineToggleBtn.classList.add('hidden');
-    elements.downloadBtn.classList.remove('hidden');
-    
-    // Hide control sidebar
-    document.querySelector('.control-sidebar').style.display = 'none';
-
-    // Hide overlays
-    elements.depthOverlayCanvas.classList.add('hidden');
-    elements.lineOverlayCanvas.classList.add('hidden');
-    elements.lightsOverlayCanvas.classList.add('hidden');
-
-    // Remove crosshair cursor
-    elements.canvas.classList.remove('crosshair');
-	
-	// Calculate average depth after collecting all samples
-	calculateAverageDepth();
-
-    // Show processing for a short time
-    setTimeout(() => {
-        // Capture a frame with just the image and lights, no splines or control points
-        // We do this by temporarily rendering a frame with inEnhanceMode true,
-        // which will exclude the splines and control points
-        applyEnhancements();
-    }, 2000);
-}
-
-// Add this new function to calculate the average depth
-function calculateAverageDepth() {
-    if (state.depthSamples.length > 0) {
-        const sum = state.depthSamples.reduce((total, depth) => total + depth, 0);
-        state.averageDepth = sum / state.depthSamples.length;
-        console.log(`Average depth calculated: ${state.averageDepth}`);
-    }
-}
-
-function applyEnhancements() {
-    // Create a new canvas for combining the main canvas and lights overlay
-    const combinedCanvas = document.createElement('canvas');
-    combinedCanvas.width = elements.canvas.width;
-    combinedCanvas.height = elements.canvas.height;
-    const combinedCtx = combinedCanvas.getContext('2d');
-    
-    // First draw the main canvas image
-    combinedCtx.drawImage(elements.canvas, 0, 0);
-    
-    // Then draw the lights overlay on top
-    combinedCtx.drawImage(elements.lightsOverlayCanvas, 0, 0);
-    
-    // Get the combined image with lights
-    const combinedImage = combinedCanvas.toDataURL('image/jpeg', 0.9);
-    
-    // Save the non-enhanced combined image
-    state.combinedImage = combinedImage;
-    
-    // Show "Processing with AI" text in the processing overlay
-    const processingText = elements.processingOverlay.querySelector('p');
-    if (processingText) {
-        processingText.textContent = 'Enhancing with AI... This may take a few seconds';
-    }
-    
-    // Set a timeout to handle potential long delays
-    const timeoutDuration = 30000; // 30 seconds timeout
-    let timeoutId = setTimeout(() => {
-        console.error('API request timed out');
-        handleEnhancementFailure('Request timed out. You can still download the non-enhanced image.');
-    }, timeoutDuration);
-    
-    // Variable to track if we're still processing
-    let isProcessing = true;
-    
-    // Add a progress indicator update
-    let progressCounter = 0;
-    const progressInterval = setInterval(() => {
-        if (!isProcessing) {
-            clearInterval(progressInterval);
-            return;
+    // Private methods
+    const getApiKey = () => {
+        // In a production environment, this would retrieve the key from a secure source
+        // For now, we're keeping compatibility with the original implementation
+        // but structuring it for future improvement
+        if (!apiKey) {
+            // This should be replaced with a proper secure method in production
+            // e.g. retrieving from a secure backend endpoint
+            apiKey = 'sk-F4Z3bZLTnnAjq5pzMOmtSyLo8uJjbO2wV59cDCcBX9Nk2I9z';
         }
+        return apiKey;
+    };
+    
+    // Calculates the average depth from collected samples
+    const calculateAverageDepth = () => {
+        if (state.depthSamples.length > 0) {
+            const sum = state.depthSamples.reduce((total, depth) => total + depth, 0);
+            state.averageDepth = sum / state.depthSamples.length;
+            console.log(`Average depth calculated: ${state.averageDepth}`);
+        }
+    };
+    
+    // Creates a combined image with lights overlay
+    const createCombinedImage = () => {
+        const combinedCanvas = document.createElement('canvas');
+        combinedCanvas.width = elements.canvas.width;
+        combinedCanvas.height = elements.canvas.height;
+        const combinedCtx = combinedCanvas.getContext('2d');
         
-        progressCounter++;
-        const dots = '.'.repeat(progressCounter % 4);
+        // First draw the main canvas image
+        combinedCtx.drawImage(elements.canvas, 0, 0);
+        
+        // Then draw the lights overlay on top
+        combinedCtx.drawImage(elements.lightsOverlayCanvas, 0, 0);
+        
+        return combinedCanvas.toDataURL('image/jpeg', 0.9);
+    };
+    
+    // Updates UI to show processing state
+    const showProcessingState = (message) => {
+        const processingText = elements.processingOverlay.querySelector('p');
         if (processingText) {
-            processingText.textContent = `Enhancing with AI${dots} This may take a few seconds`;
+            processingText.textContent = message;
         }
-    }, 1000);
+        elements.processingOverlay.classList.remove('hidden');
+        state.processing = true;
+    };
     
-    // Send the image to the Stability AI Replace Background and Relight API
-    sendToStabilityRelight(combinedImage)
-        .then(enhancedImageUrl => {
-            // Clear the timeout since we got a response
-            clearTimeout(timeoutId);
-            isProcessing = false;
-            clearInterval(progressInterval);
+    // Updates UI for enhancement mode
+    const enterEnhanceMode = () => {
+        // Adjust UI for enhance mode
+        elements.undoBtn.classList.add('hidden');
+        elements.clearBtn.classList.add('hidden');
+        elements.enhanceBtn.classList.add('hidden');
+        elements.depthToggleBtn.classList.add('hidden');
+        elements.lineToggleBtn.classList.add('hidden');
+        elements.downloadBtn.classList.remove('hidden');
+        
+        // Hide control sidebar
+        document.querySelector('.control-sidebar').style.display = 'none';
+
+        // Hide overlays
+        elements.depthOverlayCanvas.classList.add('hidden');
+        elements.lineOverlayCanvas.classList.add('hidden');
+        elements.lightsOverlayCanvas.classList.add('hidden');
+
+        // Remove crosshair cursor
+        elements.canvas.classList.remove('crosshair');
+    };
+    
+    // Handles the enhancement process
+    const applyEnhancements = async () => {
+        showProcessingState('Enhancing with AI... This may take a few seconds');
+        
+        // Create and store the combined image
+        const combinedImage = createCombinedImage();
+        state.combinedImage = combinedImage;
+        
+        try {
+            // Set up progress indicator
+            const updateProgressIndicator = setupProgressIndicator();
             
-            // Once we get the enhanced image back, display it
+            // Send image to Stability AI API and wait for result
+            const enhancedImageUrl = await sendToStabilityRelight(combinedImage);
+            
+            // Clear progress indicator
+            updateProgressIndicator(false);
+            
+            // Display enhanced image
+            await displayEnhancedImage(enhancedImageUrl);
+            
+            // Store the enhanced image for download
+            state.enhancedImage = enhancedImageUrl;
+            
+            // Stop animation loop since we're replacing it
+            stopLightsAnimation();
+            
+        } catch (error) {
+            console.error('AI enhancement failed:', error);
+            handleEnhancementFailure('AI enhancement failed. You can still download the non-enhanced image.');
+        }
+    };
+    
+    // Sets up a progress indicator with dots animation
+    const setupProgressIndicator = () => {
+        let progressCounter = 0;
+        let isProcessing = true;
+        const processingText = elements.processingOverlay.querySelector('p');
+        
+        const progressInterval = setInterval(() => {
+            if (!isProcessing) {
+                clearInterval(progressInterval);
+                return;
+            }
+            
+            progressCounter++;
+            const dots = '.'.repeat(progressCounter % 4);
+            if (processingText) {
+                processingText.textContent = `Enhancing with AI${dots} This may take a few seconds`;
+            }
+        }, 1000);
+        
+        return (stillProcessing) => {
+            isProcessing = stillProcessing;
+            if (!stillProcessing) {
+                clearInterval(progressInterval);
+            }
+        };
+    };
+    
+    // Displays the enhanced image on the canvas
+    const displayEnhancedImage = (imageUrl) => {
+        return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
                 // Clear the canvas entirely
-                ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+                elements.ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
                 
                 // Draw the enhanced image on the main canvas
-                ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
+                elements.ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
                 
                 // Update instructions
                 elements.instructions.textContent = 'Your enhanced image is ready!';
@@ -124,197 +159,197 @@ function applyEnhancements() {
                 elements.processingOverlay.classList.add('hidden');
                 state.processing = false;
                 
-                // Store the enhanced image for download
-                state.enhancedImage = enhancedImageUrl;
-                
-                // Stop animation loop since we're replacing it
-                stopLightsAnimation();
-                
                 // Now that we've captured and drawn the combined image, we can hide the overlay
                 elements.lightsOverlayCanvas.classList.add('hidden');
+                
+                resolve();
             };
-            img.src = enhancedImageUrl;
-        })
-        .catch(error => {
-            // Clear the timeout since we got a response (even if it's an error)
-            clearTimeout(timeoutId);
-            isProcessing = false;
-            clearInterval(progressInterval);
-            
-            console.error('AI enhancement failed:', error);
-            handleEnhancementFailure('AI enhancement failed. You can still download the non-enhanced image.');
+            img.src = imageUrl;
         });
-}
-
-// Function to send image to Stability Replace Background and Relight API
-async function sendToStabilityRelight(imageDataUrl) {
-    // Extract base64 data from data URL
-    const base64Data = imageDataUrl.split(',')[1];
+    };
     
-    // Stability API settings for Replace Background and Relight
-    const STABILITY_API_URL = 'https://api.stability.ai/v2beta/stable-image/edit/replace-background-and-relight';
-    
-    // API key directly in the code - replace with your key
-    // NOTE: For production, this should be handled securely through a server
-    const STABILITY_KEY = STABILITY_API_KEY;
-    
-    // Prepare the form data
-    const formData = new FormData();
-    
-    // Convert base64 to Blob
-    const byteCharacters = atob(base64Data);
-    const byteArrays = [];
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteArrays.push(byteCharacters.charCodeAt(i));
-    }
-    const blob = new Blob([new Uint8Array(byteArrays)], { type: 'image/jpeg' });
-    
-    // Add FILES
-    formData.append('subject_image', blob, 'christmas-lights-photo.jpg');
-    
-    // Fetch the light reference image
-    try {
-        const lightReferenceResponse = await fetch('https://i.imgur.com/yhFJRFc.png');
-        if (!lightReferenceResponse.ok) {
-            throw new Error(`Failed to fetch light reference: ${lightReferenceResponse.status}`);
+    // Handles API request to Stability AI
+    const sendToStabilityRelight = async (imageDataUrl) => {
+        // Extract base64 data from data URL
+        const base64Data = imageDataUrl.split(',')[1];
+        
+        // Convert base64 to Blob
+        const byteCharacters = atob(base64Data);
+        const byteArrays = [];
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteArrays.push(byteCharacters.charCodeAt(i));
         }
-        const lightReferenceBlob = await lightReferenceResponse.blob();
-        formData.append('light_reference', lightReferenceBlob, 'Enhancement8.png');
-    } catch (error) {
-        console.error('Error fetching light reference:', error);
-        throw error;
-    }
-    
-    // Add PARAMETERS
-    formData.append('background_prompt', "Professional frontal photograph of a small single-story house filling most of the frame, perfect straight-on symmetrical view with no angle, bungalow style home, one floor only, nighttime scene, cloudy winter sky, fresh snow covering the ground, vibrant multicolored Christmas lights concentrated on the roof lines, equal distribution of red, blue, green, purple, and teal hues, no single dominant color, dramatic light play on the home's façade, windows showing warm yellow interior lighting, untouched snow reflecting colorful light patterns, empty foreground with clear unobstructed view, perfectly centered composition, low-height residential structure, cottage-like proportions, photorealistic composition with enhanced lighting post-processing, dramatic colorful lighting as main subject, architectural details clearly visible, high contrast between colorful illumination and dark snowy surroundings, perfectly level horizon");
-    formData.append('foreground_prompt', 'Beautiful home with bright multicolor christmas lights');
-    formData.append('negative_prompt', '');
-    formData.append('preserve_original_subject', '0.6');
-    formData.append('original_background_depth', state.averageDepth.toString());
-    formData.append('keep_original_background', 'true');
-    formData.append('light_source_strength', '1');
-    formData.append('output_format', 'png');
-    formData.append('seed', '0');
-    
-    // Send initial request to Stability API
-    const response = await fetch(STABILITY_API_URL, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${STABILITY_KEY}`,
-            'Accept': 'application/json'
-        },
-        body: formData
-    });
-    
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Stability API error: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-    
-    // Parse the response to get the generation ID
-    const responseData = await response.json();
-    const generationId = responseData.id;
-    
-    if (!generationId) {
-        throw new Error('No generation ID returned from API');
-    }
-    
-    console.log(`Generation started with ID: ${generationId}`);
-    
-    // Now poll for results
-    return pollForResults(generationId, STABILITY_KEY);
-}
-
-// Function to poll for results
-async function pollForResults(generationId, apiKey) {
-    const maxAttempts = 15;  // Maximum number of polling attempts
-    const pollingInterval = 2000;  // 2 seconds between polls (to fit within 30 sec timeout)
-    let attempts = 0;
-    
-    // Poll in a loop
-    while (attempts < maxAttempts) {
-        attempts++;
-        console.log(`Polling for results (attempt ${attempts}/${maxAttempts}): https://api.stability.ai/v2beta/results/${generationId}`);
+        const blob = new Blob([new Uint8Array(byteArrays)], { type: 'image/jpeg' });
+        
+        // Prepare the form data
+        const formData = new FormData();
+        formData.append('subject_image', blob, 'christmas-lights-photo.jpg');
+        
+        // Fetch the light reference image
+        try {
+            const lightReferenceResponse = await fetch(API_CONFIG.LIGHT_REFERENCE_URL);
+            if (!lightReferenceResponse.ok) {
+                throw new Error(`Failed to fetch light reference: ${lightReferenceResponse.status}`);
+            }
+            const lightReferenceBlob = await lightReferenceResponse.blob();
+            formData.append('light_reference', lightReferenceBlob, 'Enhancement8.png');
+        } catch (error) {
+            console.error('Error fetching light reference:', error);
+            throw error;
+        }
+        
+        // Add parameters
+        formData.append('background_prompt', "Professional frontal photograph of a small single-story house filling most of the frame, perfect straight-on symmetrical view with no angle, bungalow style home, one floor only, nighttime scene, cloudy winter sky, fresh snow covering the ground, vibrant multicolored Christmas lights concentrated on the roof lines, equal distribution of red, blue, green, purple, and teal hues, no single dominant color, dramatic light play on the home's façade, windows showing warm yellow interior lighting, untouched snow reflecting colorful light patterns, empty foreground with clear unobstructed view, perfectly centered composition, low-height residential structure, cottage-like proportions, photorealistic composition with enhanced lighting post-processing, dramatic colorful lighting as main subject, architectural details clearly visible, high contrast between colorful illumination and dark snowy surroundings, perfectly level horizon");
+        formData.append('foreground_prompt', 'Beautiful home with bright multicolor christmas lights');
+        formData.append('negative_prompt', '');
+        formData.append('preserve_original_subject', '0.6');
+        formData.append('original_background_depth', state.averageDepth.toString());
+        formData.append('keep_original_background', 'true');
+        formData.append('light_source_strength', '1');
+        formData.append('output_format', 'png');
+        formData.append('seed', '0');
+        
+        // Send request with timeout handling
+        const abortController = new AbortController();
+        const timeout = setTimeout(() => abortController.abort(), 30000);
         
         try {
-            const response = await fetch(`https://api.stability.ai/v2beta/results/${generationId}`, {
-                method: 'GET',
+            const response = await fetch(API_CONFIG.STABILITY_API_URL, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Accept': '*/*'
-                }
+                    'Authorization': `Bearer ${getApiKey()}`,
+                    'Accept': 'application/json'
+                },
+                body: formData,
+                signal: abortController.signal
             });
             
-            // If response is 202, it means the generation is still processing
-            if (response.status === 202) {
-                console.log('Still processing, waiting to poll again...');
-                await new Promise(resolve => setTimeout(resolve, pollingInterval));
-                continue;
-            }
+            clearTimeout(timeout);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`Result polling error: ${response.status} ${response.statusText} - ${errorText}`);
+                throw new Error(`Stability API error: ${response.status} ${response.statusText} - ${errorText}`);
             }
             
-            // Generation complete, get the image data
-            const imageBlob = await response.blob();
-            return URL.createObjectURL(imageBlob);
+            // Parse the response to get the generation ID
+            const responseData = await response.json();
+            const generationId = responseData.id;
             
+            if (!generationId) {
+                throw new Error('No generation ID returned from API');
+            }
+            
+            console.log(`Generation started with ID: ${generationId}`);
+            
+            // Poll for results
+            return await pollForResults(generationId);
         } catch (error) {
-            console.error('Error polling for results:', error);
+            clearTimeout(timeout);
+            console.error('API request error:', error);
             throw error;
         }
-    }
-    
-    throw new Error(`Timed out after ${maxAttempts} polling attempts`);
-}
-
-// Function to handle enhancement failures
-function handleEnhancementFailure(message) {
-    // Display alert with error message
-    alert(message);
-    
-    // Use the non-enhanced combined image
-    const img = new Image();
-    img.onload = () => {
-        // Clear the canvas entirely
-        ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
-        
-        // Draw the combined image on the main canvas
-        ctx.drawImage(img, 0, 0, elements.canvas.width, elements.canvas.height);
-        
-        // Update instructions
-        elements.instructions.textContent = 'Non-enhanced image is ready for download';
-        
-        // Hide processing overlay
-        elements.processingOverlay.classList.add('hidden');
-        state.processing = false;
-        
-        // Store the non-enhanced image for download
-        state.enhancedImage = state.combinedImage;
-        
-        // Stop animation loop since we're replacing it
-        stopLightsAnimation();
-        
-        // Hide the lights overlay
-        elements.lightsOverlayCanvas.classList.add('hidden');
     };
-    img.src = state.combinedImage;
-}
+    
+    // Polls for results from the Stability API
+    const pollForResults = async (generationId) => {
+        const maxAttempts = 15;
+        const pollingInterval = 2000;
+        let attempts = 0;
+        
+        while (attempts < maxAttempts) {
+            attempts++;
+            console.log(`Polling for results (attempt ${attempts}/${maxAttempts}): https://api.stability.ai/v2beta/results/${generationId}`);
+            
+            try {
+                const response = await fetch(`https://api.stability.ai/v2beta/results/${generationId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${getApiKey()}`,
+                        'Accept': '*/*'
+                    }
+                });
+                
+                // If response is 202, it means the generation is still processing
+                if (response.status === 202) {
+                    console.log('Still processing, waiting to poll again...');
+                    await new Promise(resolve => setTimeout(resolve, pollingInterval));
+                    continue;
+                }
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Result polling error: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                
+                // Generation complete, get the image data
+                const imageBlob = await response.blob();
+                return URL.createObjectURL(imageBlob);
+                
+            } catch (error) {
+                console.error('Error polling for results:', error);
+                throw error;
+            }
+        }
+        
+        throw new Error(`Timed out after ${maxAttempts} polling attempts`);
+    };
+    
+    // Handles enhancement failures gracefully
+    const handleEnhancementFailure = (message) => {
+        // Display alert with error message
+        alert(message);
+        
+        // Use the non-enhanced combined image
+        displayEnhancedImage(state.combinedImage)
+            .then(() => {
+                // Update instructions
+                elements.instructions.textContent = 'Non-enhanced image is ready for download';
+            });
+    };
+    
+    // Public methods
+    return {
+        // Main entry point for enhancement
+        enhanceImage: function() {
+            // Set enhance mode to disable further drawing
+            state.inEnhanceMode = true;
+            
+            // Show processing overlay
+            showProcessingState('Processing image...');
+            
+            // Adjust UI for enhance mode
+            enterEnhanceMode();
+            
+            // Calculate average depth for better enhancement
+            calculateAverageDepth();
 
-elements.downloadBtn.addEventListener('click', downloadImage);
+            // Show processing for a short time, then apply enhancements
+            setTimeout(applyEnhancements, 2000);
+        },
         
-function downloadImage() {
-    if (state.enhancedImage) {
-        // Download enhanced image
-        const link = document.createElement('a');
-        link.href = state.enhancedImage;
-        link.download = 'christmas-lights-photo-enhanced.png';
+        // Downloads the enhanced image
+        downloadImage: function() {
+            if (state.enhancedImage) {
+                const link = document.createElement('a');
+                link.href = state.enhancedImage;
+                link.download = 'christmas-lights-photo-enhanced.png';
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        },
         
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-}
+        // For testing
+        _setApiKey: function(key) {
+            apiKey = key;
+        }
+    };
+})();
+
+// Initialize and expose module
+window.EnhanceModule = EnhanceModule;
+
+elements.enhanceBtn.addEventListener('click', EnhanceModule.enhanceImage);
+elements.downloadBtn.addEventListener('click', EnhanceModule.downloadImage);

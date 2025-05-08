@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/svg" href="./favicon.svg"/>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Christmas Lights Photo App</title>
+    <link rel="icon" type="image/svg" href="./favicon.svg"/>
     <link rel="stylesheet" href="styles.css">
+    <!-- Description for SEO -->
+    <meta name="description" content="Create beautiful Christmas light displays on your photos with this interactive web app">
+    <!-- Prevent favicon.ico request -->
+    <link rel="icon" href="data:,">
 </head>
 <body>
     <div class="container">
@@ -16,6 +20,8 @@
             <div id="cameraTab" class="tab active">Use Camera</div>
             <div id="fileTab" class="tab">Upload Image</div>
         </div>
+        
+        <!-- ===== Input Views ===== -->
         
         <!-- Camera View -->
         <div id="cameraView">
@@ -46,7 +52,7 @@
                     </svg>
                     <p>Upload an image</p>
                 </div>
-                <img id="previewImage" class="hidden">
+                <img id="previewImage" class="hidden" alt="Preview">
             </div>
             <div class="button-container">
                 <input type="file" id="fileInput" class="file-input" accept="image/*">
@@ -55,7 +61,7 @@
             </div>
         </div>
         
-        <!-- Editor View -->
+        <!-- ===== Editor View ===== -->
         <div id="editorView" class="hidden">
             <div class="editor-container">
                 <!-- Sidebar with controls -->
@@ -85,40 +91,52 @@
                 </div>
 
                 <!-- Main Canvas Container -->
-				<div class="input-container">
-					<canvas id="canvas" class="crosshair"></canvas>
-					<canvas id="lightsOverlayCanvas" class="overlay-canvas"></canvas>
-					<canvas id="depthOverlayCanvas" class="overlay-canvas hidden"></canvas>
-					<canvas id="lineOverlayCanvas" class="overlay-canvas hidden"></canvas>
-					<div id="processingOverlay" class="processing-overlay hidden">
-						<p>Processing image...</p>
-						<div class="progress">
-							<div class="progress-bar"></div>
-						</div>
-					</div>
-				</div>
+                <div class="input-container">
+                    <!-- Main editing canvas -->
+                    <canvas id="canvas" class="crosshair"></canvas>
+                    
+                    <!-- Overlay canvases for different visualizations -->
+                    <canvas id="lightsOverlayCanvas" class="overlay-canvas"></canvas>
+                    <canvas id="depthOverlayCanvas" class="overlay-canvas hidden"></canvas>
+                    <canvas id="lineOverlayCanvas" class="overlay-canvas hidden"></canvas>
+                    
+                    <!-- Processing overlay -->
+                    <div id="processingOverlay" class="processing-overlay hidden">
+                        <p>Processing image...</p>
+                        <div class="progress">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div id="instructions" class="instructions">Click to add points for your Christmas lights</div>
             
             <div id="editorButtons" class="button-container">
+                <!-- Editing buttons -->
                 <button id="undoBtn" class="button button-purple" disabled>Undo</button>
                 <button id="clearBtn" class="button button-red" disabled>Clear All</button>
                 <button id="enhanceBtn" class="button button-green" disabled>Enhance Image</button>
                 <button id="resetBtn" class="button button-gray">Start Over</button>
-				<button id="depthToggleBtn" class="button button-blue">Toggle Depth Map</button>
-				<button id="lineToggleBtn" class="button button-orange">Toggle Line Data</button>
+                
+                <!-- Toggle buttons -->
+                <button id="depthToggleBtn" class="button button-blue">Toggle Depth Map</button>
+                <button id="lineToggleBtn" class="button button-orange">Toggle Line Data</button>
+                
+                <!-- Download button (hidden initially) -->
                 <button id="downloadBtn" class="button button-blue hidden">Download Image</button>
             </div>
             
             <!-- Results Container -->
             <div id="resultsContainer" class="hidden">
                 <div class="input-container">
-                    <img id="enhancedImage" width="100%">
+                    <img id="enhancedImage" width="100%" alt="Enhanced Image">
                 </div>
                 <div class="instructions">AI Enhanced Image</div>
             </div>
         </div>
+        
+        <!-- ===== Overlays ===== -->
         
         <!-- Color Picker Overlay -->
         <div id="colorPickerOverlay" class="color-picker-overlay hidden">
@@ -133,16 +151,8 @@
         </div>
     </div>
 
+    <!-- ===== Scripts ===== -->
+    <!-- Core functionality -->
     <script src="main.js"></script>
-	<script src="Sliders.js"></script>
-	<script src="ColorBar.js"></script>
-	<script src="TabNavigation.js"></script>
-	<script src="CameraFunctions.js"></script>
-	<script src="FileUpload.js "></script>
-	<script src="ImageProcessing.js"></script>
-	<script src="DrawingFunctions.js"></script>
-	<script src="ChristmasLights.js"></script>
-	<script src="EnhanceImage.js"></script>
-	<script src="ResetApp.js "></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+/* ===== Base Styles ===== */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
@@ -17,6 +18,7 @@ h1 {
     color: #2a4365;
 }
 
+/* ===== Tab Navigation ===== */
 .tab-container {
     display: flex;
     justify-content: center;
@@ -37,6 +39,7 @@ h1 {
     color: #2b6cb0;
 }
 
+/* ===== Editor Layout ===== */
 .editor-container {
     display: flex;
     align-items: stretch;
@@ -53,141 +56,10 @@ h1 {
     flex-shrink: 0;
 }
 
-.density-slider-container {
-    height: 150px;
-    width: 40px;
-    background-color: #e2e8f0;
-    border-radius: 8px;
-    position: relative;
-    margin-bottom: 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 0;
-}
-
-.density-slider {
-    width: 100%;
-    height: 100%;
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-    outline: none;
-    writing-mode: vertical-lr;
-    direction: rtl;
-}
-
-.density-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-}
-
-.density-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-}
-
-.density-label {
-    font-size: 10px;
-    margin-top: 5px;
-    color: #4a5568;
-    text-align: center;
-}
-
-.slider-tick {
-    position: absolute;
-    width: 100%;
-    left: 0;
-    height: 1px;
-    background-color: #a0aec0;
-}
-
-.slider-tick.min {
-    bottom: 10px;
-}
-
-.slider-tick.mid {
-    bottom: 50%;
-}
-
-.slider-tick.max {
-    top: 10px;
-}
-
-.slider-value {
-    position: absolute;
-    right: -25px;
-    font-size: 10px;
-    color: #4a5568;
-}
-
-.color-bar-container {
-    height: 150px;
-    width: 40px;
-    background: #f0f0f0; /* Neutral background instead of predefined gradient */
-    border-radius: 8px;
-    position: relative;
-    overflow: visible;
-    margin-bottom: 15px;
-}
-
-.speed-slider-container {
-    height: 150px;
-    width: 40px;
-    background-color: #e2e8f0;
-    border-radius: 8px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 0;
-    margin-bottom: 15px;
-}
-
-.speed-slider {
-    width: 100%;
-    height: 100%;
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-    outline: none;
-    writing-mode: vertical-lr;
-    direction: rtl;
-}
-
-.speed-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-}
-
-.speed-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-}
-
-.speed-label {
-    font-size: 10px;
-    margin-top: 5px;
-    color: #4a5568;
-    text-align: center;
-}
-
+/* ===== Control Sliders ===== */
+/* Common slider styles */
+.density-slider-container,
+.speed-slider-container,
 .glow-size-slider-container {
     height: 150px;
     width: 40px;
@@ -198,8 +70,12 @@ h1 {
     flex-direction: column;
     align-items: center;
     padding: 10px 0;
+    margin-bottom: 15px;
 }
 
+/* Vertical range slider styles */
+.density-slider,
+.speed-slider,
 .glow-size-slider {
     width: 100%;
     height: 100%;
@@ -211,6 +87,9 @@ h1 {
     direction: rtl;
 }
 
+/* Slider thumb styles */
+.density-slider::-webkit-slider-thumb,
+.speed-slider::-webkit-slider-thumb,
 .glow-size-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -221,6 +100,8 @@ h1 {
     cursor: pointer;
 }
 
+.density-slider::-moz-range-thumb,
+.speed-slider::-moz-range-thumb,
 .glow-size-slider::-moz-range-thumb {
     width: 20px;
     height: 20px;
@@ -229,11 +110,25 @@ h1 {
     cursor: pointer;
 }
 
+/* Slider labels */
+.density-label,
+.speed-label,
 .glow-size-label {
     font-size: 10px;
     margin-top: 5px;
     color: #4a5568;
     text-align: center;
+}
+
+/* ===== Color Bar ===== */
+.color-bar-container {
+    height: 150px;
+    width: 40px;
+    background: #f0f0f0; /* Neutral background instead of predefined gradient */
+    border-radius: 8px;
+    position: relative;
+    overflow: visible;
+    margin-bottom: 15px;
 }
 
 .color-marker {
@@ -265,19 +160,7 @@ h1 {
     opacity: 0.9;
 }
 
-.input-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: white;
-}
-
+/* ===== Input Areas ===== */
 .input-container {
     display: flex;
     flex-direction: column;
@@ -291,6 +174,20 @@ h1 {
     aspect-ratio: 1/1;
 }
 
+.input-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* ===== Canvas Layers ===== */
 .overlay-canvas {
     position: absolute;
     top: 0;
@@ -316,38 +213,17 @@ h1 {
     pointer-events: none;
 }
 
-.toggle-btn {
-    margin-top: 5px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: 500;
+.crosshair {
+    cursor: crosshair;
 }
 
-.button-orange {
-    background-color: #ed8936;
-}
-
-.button-orange:hover:not(:disabled) {
-    background-color: #dd6b20;
-}
-
-video {
+video, #previewImage, #canvas {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-#previewImage {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-#canvas {
-    width: 100%;
-    height: 100%;
-}
-
+/* ===== Buttons and Controls ===== */
 .button-container {
     display: flex;
     justify-content: center;
@@ -371,6 +247,7 @@ video {
     cursor: not-allowed;
 }
 
+/* Button color variants */
 .button-blue {
     background-color: #3b82f6;
 }
@@ -411,6 +288,22 @@ video {
     background-color: #4b5563;
 }
 
+.button-orange {
+    background-color: #ed8936;
+}
+
+.button-orange:hover:not(:disabled) {
+    background-color: #dd6b20;
+}
+
+.toggle-btn {
+    margin-top: 5px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* File input styling */
 .file-input {
     position: absolute;
     width: 0.1px;
@@ -435,10 +328,7 @@ video {
     background-color: #2563eb;
 }
 
-.hidden {
-    display: none !important;
-}
-
+/* ===== Overlays and Modals ===== */
 .processing-overlay {
     position: absolute;
     top: 0;
@@ -452,34 +342,6 @@ video {
     justify-content: center;
     color: white;
     z-index: 100;
-}
-
-.crosshair {
-    cursor: crosshair;
-}
-
-.instructions {
-    text-align: center;
-    margin: 10px 0;
-    font-size: 14px;
-    color: #4a5568;
-}
-
-.progress {
-    width: 50%;
-    height: 4px;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: 10px;
-}
-
-.progress-bar {
-    height: 100%;
-    background-color: #3b82f6;
-    width: 0%;
-    transition: width 0.3s ease;
-    animation: progress-animation 1.5s infinite ease-in-out;
 }
 
 .color-picker-overlay {
@@ -525,13 +387,43 @@ video {
     gap: 10px;
 }
 
+/* ===== Utility Classes ===== */
+.hidden {
+    display: none !important;
+}
+
+.instructions {
+    text-align: center;
+    margin: 10px 0;
+    font-size: 14px;
+    color: #4a5568;
+}
+
+/* ===== Progress Bar ===== */
+.progress {
+    width: 50%;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #3b82f6;
+    width: 0%;
+    transition: width 0.3s ease;
+    animation: progress-animation 1.5s infinite ease-in-out;
+}
+
 @keyframes progress-animation {
     0% { width: 0%; }
     50% { width: 70%; }
     100% { width: 100%; }
 }
 
-/* Mobile responsiveness */
+/* ===== Responsive Styles ===== */
 @media (max-width: 768px) {
     .editor-container {
         flex-direction: column;
@@ -546,13 +438,13 @@ video {
     }
     
     .density-slider-container,
-	.color-bar-container,
-	.speed-slider-container,
-	.glow-size-slider-container {
-		height: 150px;
-		margin-bottom: 0;
-		margin-right: 5px;
-	}
+    .color-bar-container,
+    .speed-slider-container,
+    .glow-size-slider-container {
+        height: 150px;
+        margin-bottom: 0;
+        margin-right: 5px;
+    }
     
     .input-container {
         max-width: 100%;
