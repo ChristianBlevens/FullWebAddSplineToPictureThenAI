@@ -228,7 +228,7 @@ video, #previewImage, #canvas {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 7px;
     margin: 15px 0;
 }
 

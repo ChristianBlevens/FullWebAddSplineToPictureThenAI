@@ -48,7 +48,9 @@ const ChristmasLightsModule = (function() {
                 renderFrame(phase);
                 
                 // Increment phase for animation, adjusted by animation speed
-                phase += deltaTime * state.animationSpeed * CONFIG.PHASE_INCREMENT_FACTOR;
+				if (window.state.playAnimations) {
+					phase += deltaTime * state.animationSpeed * CONFIG.PHASE_INCREMENT_FACTOR;
+				}
                 
                 // Continue animation
                 state.animationId = requestAnimationFrame(animate);
@@ -89,7 +91,7 @@ const ChristmasLightsModule = (function() {
         elements.lightsCtx.clearRect(0, 0, elements.lightsOverlayCanvas.width, elements.lightsOverlayCanvas.height);
         
         // Only draw editing visuals if not in enhance mode
-        if (!state.inEnhanceMode) {
+        if (!state.inEnhanceMode && window.state.showSplines) {
             drawEditingVisuals();
         }
         
@@ -251,9 +253,9 @@ const ChristmasLightsModule = (function() {
         
         // Add tiny bright center for more intensity
         elements.lightsCtx.beginPath();
-        elements.lightsCtx.arc(x, y, size * 0.4, 0, Math.PI * 2);
+        elements.lightsCtx.arc(x, y, size * 0.7, 0, Math.PI * 2);
         elements.lightsCtx.fillStyle = '#ffffff';
-        elements.lightsCtx.globalAlpha = 0.7;
+        elements.lightsCtx.globalAlpha = 1;
         elements.lightsCtx.fill();
         elements.lightsCtx.globalAlpha = 1.0;
         
@@ -577,9 +579,49 @@ const ChristmasLightsModule = (function() {
     const clearDepthCache = () => {
         cache.depthValues = {};
     };
+	
+	// Initialize event listeners
+    const initEventListeners = () => {
+        // Toggle animation button
+        if (elements.toggleAnimationBtn) {
+            elements.toggleAnimationBtn.addEventListener('click', toggleAnimation);
+        }
+        
+        // Toggle splines button
+        if (elements.toggleSplinesBtn) {
+            elements.toggleSplinesBtn.addEventListener('click', toggleSplines);
+        }
+    };
+	
+	// Function to toggle animation state
+    const toggleAnimation = () => {
+        // Toggle the animation state
+        window.state.playAnimations = !window.state.playAnimations;
+        
+        // Update the button text
+        if (elements.toggleAnimationBtn) {
+            elements.toggleAnimationBtn.textContent = state.playAnimations ? "Pause Animation" : "Play Animation";
+        }
+    };
+    
+    // Function to toggle splines visibility
+    const toggleSplines = () => {
+        // Toggle the splines visibility state
+        window.state.showSplines = !window.state.showSplines;
+        
+        // Update the button text
+        if (elements.toggleSplinesBtn) {
+            elements.toggleSplinesBtn.textContent = state.showSplines ? "Hide Splines" : "Show Splines";
+        }
+    };
     
     // Public API
     return {
+		// Initialize the module
+        init: function() {
+            initEventListeners();
+        },
+		
         // Start and stop animation
         startLightsAnimation: startLightsAnimation,
         stopLightsAnimation: stopLightsAnimation,
@@ -604,6 +646,7 @@ const ChristmasLightsModule = (function() {
 })();
 
 // Initialize and expose module
+ChristmasLightsModule.init();
 window.ChristmasLightsModule = ChristmasLightsModule;
 
 // Expose the module to the global namespace for backwards compatibility

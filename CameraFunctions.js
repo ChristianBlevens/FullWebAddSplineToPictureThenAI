@@ -100,31 +100,14 @@ const CameraModule = (function() {
         // Get the full resolution image data
         const fullImage = tempCanvas.toDataURL('image/jpeg', CONFIG.IMAGE_QUALITY);
         
-        // Process the captured image
-        processImage(fullImage);
-    };
-    
-    // Process the captured image
-    const processImage = (fullImage) => {
-        // Use the crop utility if available
-        if (typeof cropImageToSquare === 'function') {
-            cropImageToSquare(fullImage, (croppedImage) => {
-                // Save the cropped image
-                state.fullResImage = croppedImage;
-                
-                // Stop the camera
-                stopCamera();
-                
-                // Process the captured image with ImageProcessing module
-                if (typeof window.processImage === 'function') {
-                    window.processImage(state.fullResImage);
-                } else {
-                    console.error('processImage function not found');
-                    alert('Image processing function unavailable. Please refresh the page and try again.');
-                }
-            });
+        // Stop the camera
+        stopCamera();
+        
+        // Process the captured image using our centralized handler
+        if (typeof window.handleImage === 'function') {
+            window.handleImage(fullImage);
         } else {
-            console.error('cropImageToSquare function not found');
+            console.error('handleImage function not found');
             alert('Image processing function unavailable. Please refresh the page and try again.');
         }
     };

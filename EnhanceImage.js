@@ -3,7 +3,7 @@ const EnhanceModule = (function() {
     // Private variables
     const API_CONFIG = {
         STABILITY_API_URL: 'https://api.stability.ai/v2beta/stable-image/edit/replace-background-and-relight',
-        LIGHT_REFERENCE_URL: 'https://i.imgur.com/yhFJRFc.png'
+        LIGHT_REFERENCE_URL: 'https://i.imgur.com/cOOquQS.png'
     };
     
     // API key should be handled securely in production
@@ -67,6 +67,8 @@ const EnhanceModule = (function() {
         elements.enhanceBtn.classList.add('hidden');
         elements.depthToggleBtn.classList.add('hidden');
         elements.lineToggleBtn.classList.add('hidden');
+		elements.toggleAnimationBtn.classList.add('hidden');
+		elements.toggleSplinesBtn.classList.add('hidden');
         elements.downloadBtn.classList.remove('hidden');
         
         // Hide control sidebar
@@ -199,11 +201,11 @@ const EnhanceModule = (function() {
         }
         
         // Add parameters
-        formData.append('background_prompt', "masterpiece, professionally retouched, christmas lights, magical illumination, vibrant glowing orbs, ethereal bokeh, cinematic lighting, dramatic lighting, breathtaking atmosphere, enchanted nightscape, magical glow, luminous, celestial sparkling, dream-like, high dynamic range, rich color saturation, magical realism, perfect exposure, ambient glow, festive atmosphere, fairy tale aesthetic, crystal clear, warm golden light, intricate light patterns, photorealistic, detailed, 8k resolution, professional photography, christmas magic");
-        formData.append('foreground_prompt', "Cozy craftsman home at twilight, adorned with vibrant Christmas lights in multiple colors twinkling along the roofline, Fresh snow blankets the front yard, reflecting the colorful glow, Warm yellow light emanates from frost-edged windows, Crisp winter air, photorealistic style, cinematic lighting, 8k resolution");
+        formData.append('background_prompt', "christmas lights, breathtaking nightscape atmosphere, high dynamic range, perfect exposure, crystal clear, photorealistic, detailed, 8k resolution, professional photography");
+        formData.append('foreground_prompt', "home at twilight, adorned with very bright vibrant Christmas lights in multiple colors twinkling along the roofline which are the only source of light, reflecting the colorful glow, cinematic lighting, 8k resolution");
         formData.append('negative_prompt', '');
         formData.append('preserve_original_subject', '0.6');
-        formData.append('original_background_depth', state.averageDepth.toString());
+        formData.append('original_background_depth', (state.averageDepth - .1).toString());
         formData.append('keep_original_background', 'true');
         formData.append('light_source_strength', '1');
         formData.append('output_format', 'png');
@@ -339,6 +341,16 @@ const EnhanceModule = (function() {
                 link.click();
                 document.body.removeChild(link);
             }
+			else {
+				const link = document.createElement('a');
+                link.href = createCombinedImage();
+                link.download = 'christmas-lights-photo-enhanced.png';
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+			}
         },
         
         // For testing

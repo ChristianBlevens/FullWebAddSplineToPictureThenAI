@@ -30,6 +30,8 @@ const ChristmasLightsApp = (function() {
         depthSamples: [],    // Array to store all depth samples for averaging
         
         // Animation settings
+		playAnimations: true, // Animation state - true means animations are playing
+        showSplines: true,    // Splines visibility state - true means splines are visible
         animatingLights: true, // Always animating lights
         animationId: null,
         animationSpeed: 1.0,  // Default animation speed
@@ -191,8 +193,9 @@ const ChristmasLightsApp = (function() {
             'depthOverlayCanvas', 'lineOverlayCanvas', 'lightsOverlayCanvas',
             'densitySlider', 'colorBar', 'colorPickerOverlay', 'colorPickerInput',
             'selectColorBtn', 'cancelColorBtn', 'speedSlider', 'glowSizeSlider',
-            'enhancedImage', 'undoBtn', 'clearBtn', 'enhanceBtn', 'downloadBtn',
-            'resetBtn', 'editorButtons', 'depthToggleBtn', 'lineToggleBtn'
+            'enhancedImage', 'undoBtn', 'clearBtn', 'enhanceBtn', 'toggleAnimationBtn', 
+			'toggleSplinesBtn', 'downloadBtn', 'resetBtn', 'editorButtons', 'depthToggleBtn', 
+			'lineToggleBtn'
         ];
         
         // Get each element, but don't fail if some are missing
@@ -250,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'Sliders.js',
         'ColorBar.js',
         'TabNavigation.js',
+		'ImageHandler.js',
         'CameraFunctions.js',
         'FileUpload.js',
         'ImageProcessing.js',
