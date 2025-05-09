@@ -3,7 +3,7 @@ const EnhanceModule = (function() {
     // Private variables
     const API_CONFIG = {
         STABILITY_API_URL: 'https://api.stability.ai/v2beta/stable-image/edit/replace-background-and-relight',
-        LIGHT_REFERENCE_URL: 'https://i.imgur.com/cOOquQS.png'
+        LIGHT_REFERENCE_URL: 'https://i.imgur.com/TeSRpGV.png'
     };
     
     // API key should be handled securely in production
@@ -201,10 +201,10 @@ const EnhanceModule = (function() {
         }
         
         // Add parameters
-        formData.append('background_prompt', "christmas lights, breathtaking nightscape atmosphere, high dynamic range, perfect exposure, crystal clear, photorealistic, detailed, 8k resolution, professional photography");
-        formData.append('foreground_prompt', "home at twilight, adorned with very bright vibrant Christmas lights in multiple colors twinkling along the roofline which are the only source of light, reflecting the colorful glow, cinematic lighting, 8k resolution");
-        formData.append('negative_prompt', '');
-        formData.append('preserve_original_subject', '0.6');
+        formData.append('background_prompt', "colorful, multi-color christmas lights, dark home at twilight, adorned with very vibrant Christmas lights in multiple colors twinkling along the roofline which are the only source of light, reflecting the colorful glow, cinematic lighting, 8k resolution");
+        formData.append('foreground_prompt', "cloudy night sky, very bright multi-color christmas lights, breathtaking nightscape atmosphere, high dynamic range, perfect exposure, crystal clear, photorealistic, detailed, 8k resolution, professional photography");
+        formData.append('negative_prompt', "dim lights, warm lamp light");
+        formData.append('preserve_original_subject', '0.35');
         formData.append('original_background_depth', (state.averageDepth - .1).toString());
         formData.append('keep_original_background', 'true');
         formData.append('light_source_strength', '1');
@@ -344,7 +344,7 @@ const EnhanceModule = (function() {
 			else {
 				const link = document.createElement('a');
                 link.href = createCombinedImage();
-                link.download = 'christmas-lights-photo-enhanced.png';
+                link.download = 'christmas-lights-photo.png';
                 
                 // Trigger download
                 document.body.appendChild(link);
