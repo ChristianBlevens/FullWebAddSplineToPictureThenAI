@@ -2,9 +2,9 @@
 
 Add festive Christmas lights to your photos with this interactive web application. Draw light paths on your images and enhance them with AI to create beautiful holiday displays.
 
-Edited Image           |  Enhanced Image
-:-------------------------:|:-------------------------:
-![Christmas Lights Photo App](https://i.imgur.com/SMNiBJf.jpeg)  |  ![Christmas Lights Photo App Enhanced](https://i.imgur.com/ppfNj0M.png)
+Base Image           |     Edited Image           |  Enhanced Image
+:-------------------------:|:-------------------------:|:-------------------------:
+![Base Photo](https://i.imgur.com/pb87Imr.png)  |  ![Christmas Lights Photo](https://i.imgur.com/SMNiBJf.jpeg)  |  ![Christmas Lights Photo Enhanced](https://i.imgur.com/ppfNj0M.png)
 
 ## Table of Contents
 
