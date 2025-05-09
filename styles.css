@@ -248,6 +248,28 @@ video, #previewImage, #canvas {
 }
 
 /* Button color variants */
+.button-rainbow {
+  background-image: linear-gradient(
+    to right, 
+    #ff9999, /* light red */
+    #ffcc99, /* light orange */
+    #ffff99, /* light yellow */
+    #99ff99, /* light green */
+    #99ccff, /* light blue */
+    #cc99ff, /* light indigo */
+    #ff99ff  /* light violet */
+  );
+  color: white;
+  text-shadow: -1px -1px 0 black, 
+                1px -1px 0 black, 
+               -1px 1px 0 black, 
+                1px 1px 0 black,
+               -2px 0 0 black,
+                2px 0 0 black,
+                0 -2px 0 black,
+                0 2px 0 black;
+}
+
 .button-blue {
     background-color: #3b82f6;
 }

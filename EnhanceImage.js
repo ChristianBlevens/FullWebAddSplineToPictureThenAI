@@ -69,8 +69,8 @@ const EnhanceModule = (function() {
         elements.lineToggleBtn.classList.add('hidden');
 		elements.toggleAnimationBtn.classList.add('hidden');
 		elements.toggleSplinesBtn.classList.add('hidden');
-        elements.downloadBtn.classList.remove('hidden');
-        
+		elements.toggleIndependentColorsBtn.classList.add('hidden');
+
         // Hide control sidebar
         document.querySelector('.control-sidebar').style.display = 'none';
 

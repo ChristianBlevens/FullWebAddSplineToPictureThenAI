@@ -413,54 +413,65 @@ const DrawingModule = (function() {
     }
     
     // Handle point placement for spline creation
-    function handlePointPlacement(pointObj) {
-        const pointId = pointObj.id;
-        
-        // Check if user clicked an existing point
-        const existingPoint = state.dataStructure.points[pointId];
-        if (existingPoint && state.dataStructure.pointsInUse[pointId] > 0) {
-            // Select this point
-            state.dataStructure.selectedPointId = pointId;
-            state.splineCreation.justCreatedNewSpline = false;
-            
-            // Find a spline containing this point to make active
-            for (const splineId in state.dataStructure.splines) {
-                const spline = state.dataStructure.splines[splineId];
-                if (spline.pointIds.includes(pointId)) {
-                    state.splineCreation.activeSplineId = splineId;
-                    break;
-                }
-            }
-            
-            redrawCanvas();
-            updateButtonStates();
-            return;
-        }
-        
-        // User created a new point
-        
-        // If we have a selected point, connect to it
-        if (state.dataStructure.selectedPointId) {
-            handleConnectToSelectedPoint(pointId);
-        } 
-        // If we just created a new spline and this is the next point, continue that spline
-        else if (state.splineCreation.justCreatedNewSpline && 
-                 state.splineCreation.activeSplineId) {
-            
-            continueActiveSpline(pointId);
-        } 
-        // Create a new spline
-        else {
-            createSpline([pointId]);
-            state.splineCreation.activeSplineId = `s${state.dataStructure.nextSplineId - 1}`;
-            state.splineCreation.justCreatedNewSpline = true;
-        }
-        
-        // Build spline networks
-        buildSplineNetworks();
-        redrawCanvas();
-        updateButtonStates();
-    }
+	function handlePointPlacement(pointObj) {
+		const pointId = pointObj.id;
+		
+		// Check if user clicked an existing point
+		const existingPoint = state.dataStructure.points[pointId];
+		if (existingPoint && state.dataStructure.pointsInUse[pointId] > 0) {
+			// Select this point
+			state.dataStructure.selectedPointId = pointId;
+			state.splineCreation.justCreatedNewSpline = false;
+			
+			// Find a spline containing this point to make active
+			for (const splineId in state.dataStructure.splines) {
+				const spline = state.dataStructure.splines[splineId];
+				if (spline.pointIds.includes(pointId)) {
+					state.splineCreation.activeSplineId = splineId;
+					break;
+				}
+			}
+			
+			// Update colorbar display for the active network if in independent mode
+			if (state.allowIndependentColors && typeof updateColorBarForActiveNetwork === 'function') {
+				updateColorBarForActiveNetwork();
+			}
+			
+			redrawCanvas();
+			updateButtonStates();
+			return;
+		}
+		
+		// User created a new point
+		
+		// If we have a selected point, connect to it
+		if (state.dataStructure.selectedPointId) {
+			handleConnectToSelectedPoint(pointId);
+		} 
+		// If we just created a new spline and this is the next point, continue that spline
+		else if (state.splineCreation.justCreatedNewSpline && 
+				 state.splineCreation.activeSplineId) {
+			
+			continueActiveSpline(pointId);
+		} 
+		// Create a new spline
+		else {
+			createSpline([pointId]);
+			state.splineCreation.activeSplineId = `s${state.dataStructure.nextSplineId - 1}`;
+			state.splineCreation.justCreatedNewSpline = true;
+		}
+		
+		// Build spline networks
+		buildSplineNetworks();
+		
+		// Update colorbar display for the active network if in independent mode
+		if (state.allowIndependentColors && typeof updateColorBarForActiveNetwork === 'function') {
+			updateColorBarForActiveNetwork();
+		}
+		
+		redrawCanvas();
+		updateButtonStates();
+	}
     
     // Handle connecting a new point to a selected point
     function handleConnectToSelectedPoint(pointId) {
@@ -638,38 +649,62 @@ const DrawingModule = (function() {
     }
     
     // Undo the last action
-    function undoLastAction() {
-        if (state.actionHistory.length === 0) return;
-        
-        // Get the last action
-        const lastAction = state.actionHistory.pop();
-        
-        switch (lastAction.type) {
-            case ActionTypes.CREATE_POINT:
-                undoCreatePoint(lastAction);
-                break;
-                
-            case ActionTypes.CREATE_SPLINE:
-                undoCreateSpline(lastAction);
-                break;
-                
-            case ActionTypes.ADD_POINT_TO_SPLINE:
-                undoAddPointToSpline(lastAction);
-                break;
-                
-            case ActionTypes.MOVE_POINT:
-                undoMovePoint(lastAction);
-                break;
-        }
-        
-        // Clear selected point
-        state.dataStructure.selectedPointId = null;
-        
-        // Update networks and UI
-        buildSplineNetworks();
-        redrawCanvas();
-        updateButtonStates();
-    }
+	function undoLastAction() {
+		if (state.actionHistory.length === 0) return;
+		
+		// Get the last action
+		const lastAction = state.actionHistory.pop();
+		
+		switch (lastAction.type) {
+			case ActionTypes.CREATE_POINT:
+				undoCreatePoint(lastAction);
+				break;
+				
+			case ActionTypes.CREATE_SPLINE:
+				undoCreateSpline(lastAction);
+				break;
+				
+			case ActionTypes.ADD_POINT_TO_SPLINE:
+				undoAddPointToSpline(lastAction);
+				break;
+				
+			case ActionTypes.MOVE_POINT:
+				undoMovePoint(lastAction);
+				break;
+		}
+		
+		// Clear selected point
+		state.dataStructure.selectedPointId = null;
+		
+		// Update networks
+		buildSplineNetworks();
+		
+		// Check if any networks exist and update colorbar mode if needed
+		if (state.allowIndependentColors && 
+			(!state.dataStructure.networks || state.dataStructure.networks.length === 0)) {
+			// No networks left, switch back to central colorbar mode
+			state.allowIndependentColors = false;
+			
+			// Update UI
+			if (elements.toggleIndependentColorsBtn) {
+				elements.toggleIndependentColorsBtn.textContent = "Use Independent Colors";
+			}
+			
+			// Display the central colorbar
+			if (typeof displayCentralColorbar === 'function') {
+				displayCentralColorbar();
+			}
+		} else if (state.allowIndependentColors) {
+			// Update colorbar display for the active network
+			if (typeof updateColorBarForActiveNetwork === 'function') {
+				updateColorBarForActiveNetwork();
+			}
+		}
+		
+		// Update UI
+		redrawCanvas();
+		updateButtonStates();
+	}
     
     // Undo a CREATE_POINT action
     function undoCreatePoint(action) {
@@ -751,55 +786,102 @@ const DrawingModule = (function() {
     }
     
     // Clear all points and splines
-    function clearPoints() {
-        // Reset data structures
-        state.dataStructure.points = {};
-        state.dataStructure.splines = {};
-        state.dataStructure.pointsInUse = {};
-        state.dataStructure.selectedPointId = null;
-        state.splineCreation.activeSplineId = null;
-        state.splineCreation.justCreatedNewSpline = false;
-        
-        // Reset networks
-        state.dataStructure.networks = [];
-        
-        // Clear action history
-        state.actionHistory = [];
-        
-        // Update UI
-        redrawCanvas();
-        updateButtonStates();
-    }
+	function clearPoints() {
+		// Reset data structures
+		state.dataStructure.points = {};
+		state.dataStructure.splines = {};
+		state.dataStructure.pointsInUse = {};
+		state.dataStructure.selectedPointId = null;
+		state.splineCreation.activeSplineId = null;
+		state.splineCreation.justCreatedNewSpline = false;
+		
+		// Reset networks
+		state.dataStructure.networks = [];
+		
+		// Clear action history
+		state.actionHistory = [];
+		
+		// If using independent colors, switch back to central colorbar
+		if (state.allowIndependentColors) {
+			state.allowIndependentColors = false;
+			
+			// Update UI
+			if (elements.toggleIndependentColorsBtn) {
+				elements.toggleIndependentColorsBtn.textContent = "Use Independent Colors";
+			}
+			
+			// Display the central colorbar
+			if (typeof displayCentralColorbar === 'function') {
+				displayCentralColorbar();
+			}
+		}
+		
+		// Update UI
+		redrawCanvas();
+		updateButtonStates();
+	}
     
     // Build networks of connected splines
-    function buildSplineNetworks() {
-        // Reset networks
-        state.dataStructure.networks = [];
-        
-        // Create point-to-splines map
-        const pointToSplines = createPointToSplinesMap();
-        
-        // Track processed splines
-        const processedSplines = new Set();
-        
-        // Process each spline to build networks
-        for (const splineId in state.dataStructure.splines) {
-            // Skip if already processed
-            if (processedSplines.has(splineId)) continue;
-            
-            // Create a new network
-            const network = createNewNetwork();
-            
-            // Use queue for breadth-first traversal
-            processNetworkSplines(splineId, network, pointToSplines, processedSplines);
-            
-            // Finish network processing
-            finalizeNetwork(network);
-            
-            // Add the network
-            state.dataStructure.networks.push(network);
-        }
-    }
+	function buildSplineNetworks() {
+		// Store old networks to preserve colorbar data
+		const oldNetworks = state.dataStructure.networks || [];
+		
+		// Reset networks
+		state.dataStructure.networks = [];
+		
+		// Create point-to-splines map
+		const pointToSplines = createPointToSplinesMap();
+		
+		// Track processed splines
+		const processedSplines = new Set();
+		
+		// Process each spline to build networks
+		for (const splineId in state.dataStructure.splines) {
+			// Skip if already processed
+			if (processedSplines.has(splineId)) continue;
+			
+			// Create a new network
+			const network = createNewNetwork();
+			
+			// Use queue for breadth-first traversal
+			processNetworkSplines(splineId, network, pointToSplines, processedSplines);
+			
+			// Finish network processing
+			finalizeNetwork(network);
+			
+			// Try to find a matching old network to copy colorbar data
+			if (state.allowIndependentColors) {
+				// Try to find a match by splineIds
+				const matchingOldNetwork = oldNetworks.find(oldNetwork => {
+					// Check if any splines in the new network were also in the old network
+					return network.splineIds.some(splineId => 
+						oldNetwork.splineIds && oldNetwork.splineIds.includes(splineId)
+					);
+				});
+				
+				// If we found a matching old network with colorbar data, copy it
+				if (matchingOldNetwork && matchingOldNetwork.colorMarkers) {
+					network.colorMarkers = [];
+					// Deep copy the colorbar markers (without DOM elements)
+					matchingOldNetwork.colorMarkers.forEach(marker => {
+						network.colorMarkers.push({
+							y: marker.y,
+							color: marker.color,
+							element: null // We'll recreate DOM elements when needed
+						});
+					});
+				}
+			}
+			
+			// Add the network
+			state.dataStructure.networks.push(network);
+		}
+		
+		// Ensure any new networks have colorbar data if in independent mode
+		if (state.allowIndependentColors && typeof ensureNetworksHaveColorMarkers === 'function') {
+			ensureNetworksHaveColorMarkers();
+		}
+	}
     
     // Create mapping from points to splines that use them
     function createPointToSplinesMap() {
@@ -820,16 +902,33 @@ const DrawingModule = (function() {
     }
     
     // Create a new network object
-    function createNewNetwork() {
-        return {
-            id: `n${state.dataStructure.networks.length + 1}`,
-            splineIds: [],
-            pointIds: new Set(),
-            totalLength: 0,
-            startPointId: null,
-            endPointIds: []
-        };
-    }
+	function createNewNetwork() {
+		const newNetwork = {
+			id: `n${state.dataStructure.networks.length + 1}`,
+			splineIds: [],
+			pointIds: new Set(),
+			totalLength: 0,
+			startPointId: null,
+			endPointIds: []
+		};
+		
+		// Initialize colorMarkers if in independent colors mode
+		if (state.allowIndependentColors) {
+			newNetwork.colorMarkers = [];
+			
+			// Create a deep copy of central colorbar markers
+			state.colorMarkers.forEach(marker => {
+				newNetwork.colorMarkers.push({
+					y: marker.y,
+					color: marker.color,
+					// DOM element will be created when needed
+					element: null
+				});
+			});
+		}
+		
+		return newNetwork;
+	}
     
     // Process all splines in a network using breadth-first traversal
     function processNetworkSplines(startSplineId, network, pointToSplines, processedSplines) {

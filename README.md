@@ -193,7 +193,7 @@ As you draw paths, Christmas lights automatically animate along them:
    - "Hide Splines" toggles the visibility of your drawn paths (button text changes accordingly)
 
 #### Downloading The Current Canvas
-At any time, you can download the current canvas state (with lights, splines, depthmap, etc) as a PNG image
+At any time, you can download the current canvas state (with lights and splines or just the lights) as a PNG image
 
 ### Customizing Light Properties
 

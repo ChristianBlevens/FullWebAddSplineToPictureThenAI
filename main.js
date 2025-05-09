@@ -30,6 +30,7 @@ const ChristmasLightsApp = (function() {
         depthSamples: [],    // Array to store all depth samples for averaging
         
         // Animation settings
+		allowIndependentColors: false,  // Toggle for independent network colors
 		playAnimations: true, // Animation state - true means animations are playing
         showSplines: true,    // Splines visibility state - true means splines are visible
         animatingLights: true, // Always animating lights
@@ -195,7 +196,7 @@ const ChristmasLightsApp = (function() {
             'selectColorBtn', 'cancelColorBtn', 'speedSlider', 'glowSizeSlider',
             'enhancedImage', 'undoBtn', 'clearBtn', 'enhanceBtn', 'toggleAnimationBtn', 
 			'toggleSplinesBtn', 'downloadBtn', 'resetBtn', 'editorButtons', 'depthToggleBtn', 
-			'lineToggleBtn'
+			'lineToggleBtn', 'toggleIndependentColorsBtn'
         ];
         
         // Get each element, but don't fail if some are missing

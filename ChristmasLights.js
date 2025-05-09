@@ -199,49 +199,50 @@ const ChristmasLightsModule = (function() {
     };
     
     // Draw Christmas lights for all spline networks
-    const drawNetworkLights = (phase) => {
-        // Reset depth samples array
-        state.depthSamples = [];
-        
-        // Skip if no networks defined
-        if (!state.dataStructure || !state.dataStructure.networks) return;
-        
-        // Process each network separately
-        for (const network of state.dataStructure.networks) {
-            // Calculate light positions across the entire network
-            const networkLightPoints = calculateNetworkLightPoints(network);
-            
-            // Draw all light points with animations
-            drawLightPoints(networkLightPoints, phase);
-        }
-    };
+	const drawNetworkLights = (phase) => {
+		// Reset depth samples array
+		state.depthSamples = [];
+		
+		// Skip if no networks defined
+		if (!state.dataStructure || !state.dataStructure.networks) return;
+		
+		// Process each network separately
+		for (const network of state.dataStructure.networks) {
+			// Calculate light positions across the entire network
+			const networkLightPoints = calculateNetworkLightPoints(network);
+			
+			// Draw all light points with animations, passing the network ID
+			drawLightPoints(networkLightPoints, phase, network.id);
+		}
+	};
     
     // Draw all light points with animations
-    const drawLightPoints = (lightPoints, phase) => {
-        // Enable lighter composite operation for better blending
-        elements.lightsCtx.globalCompositeOperation = 'lighter';
-        
-        lightPoints.forEach((point, index) => {
-            // Calculate a consistent color position using the accumulated step
-            const colorPosition = (point.step + phase) % state.cycleLength;
-            const color = getColorFromMarkers(colorPosition);
-            
-            // Enhanced depth calculation for better 3D effect
-            const depth = getDepthAtPoint(point.x, point.y);
-            
-            // Store depth samples for AI enhancement
-            state.depthSamples.push(depth);
-            
-            // Size varies based on depth
-            const size = CONFIG.LIGHT_MIN_SIZE + (depth * CONFIG.LIGHT_SIZE_FACTOR);
-            
-            // Draw the light with glow effect
-            drawLightWithGlow(point.x, point.y, size, color, depth);
-        });
-        
-        // Reset composite operation
-        elements.lightsCtx.globalCompositeOperation = 'source-over';
-    };
+	const drawLightPoints = (lightPoints, phase, networkId = null) => {
+		// Enable lighter composite operation for better blending
+		elements.lightsCtx.globalCompositeOperation = 'lighter';
+		
+		lightPoints.forEach((point, index) => {
+			// Calculate a consistent color position using the accumulated step
+			const colorPosition = (point.step + phase) % state.cycleLength;
+			// Pass the network ID to get colors from the right colorbar
+			const color = getColorFromMarkers(colorPosition, networkId);
+			
+			// Enhanced depth calculation for better 3D effect
+			const depth = getDepthAtPoint(point.x, point.y);
+			
+			// Store depth samples for AI enhancement
+			state.depthSamples.push(depth);
+			
+			// Size varies based on depth
+			const size = CONFIG.LIGHT_MIN_SIZE + (depth * CONFIG.LIGHT_SIZE_FACTOR);
+			
+			// Draw the light with glow effect
+			drawLightWithGlow(point.x, point.y, size, color, depth);
+		});
+		
+		// Reset composite operation
+		elements.lightsCtx.globalCompositeOperation = 'source-over';
+	};
     
     // Draw a single light with glow effect
     const drawLightWithGlow = (x, y, size, color, depth) => {
