@@ -111,37 +111,57 @@ const ChristmasLightsModule = (function() {
     };
     
     // Draw all splines
-    const drawSplines = () => {
-        for (const splineId in state.dataStructure.splines) {
-            const spline = state.dataStructure.splines[splineId];
-            if (spline.pointIds.length >= 2) {
-                elements.lightsCtx.beginPath();
-                
-                // Get first point
-                const firstPointId = spline.pointIds[0];
-                const firstPoint = state.dataStructure.points[firstPointId];
-                elements.lightsCtx.moveTo(firstPoint.x, firstPoint.y);
-                
-                // Draw lines to all points
-                for (let i = 1; i < spline.pointIds.length; i++) {
-                    const pointId = spline.pointIds[i];
-                    const point = state.dataStructure.points[pointId];
-                    elements.lightsCtx.lineTo(point.x, point.y);
-                }
-                
-                // Highlight active spline with a different color
-                if (splineId === state.splineCreation.activeSplineId) {
-                    elements.lightsCtx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
-                    elements.lightsCtx.lineWidth = 2;
-                } else {
-                    elements.lightsCtx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
-                    elements.lightsCtx.lineWidth = 1;
-                }
-                
-                elements.lightsCtx.stroke();
-            }
-        }
-    };
+	const drawSplines = () => {
+		// First, identify which network contains the active spline (if any)
+		let activeNetworkId = null;
+		
+		if (state.splineCreation.activeSplineId) {
+			// Find which network contains the active spline
+			for (const network of state.dataStructure.networks) {
+				if (network.splineIds.includes(state.splineCreation.activeSplineId)) {
+					activeNetworkId = network.id;
+					break;
+				}
+			}
+		}
+		
+		// Draw each spline
+		for (const splineId in state.dataStructure.splines) {
+			const spline = state.dataStructure.splines[splineId];
+			if (spline.pointIds.length >= 2) {
+				elements.lightsCtx.beginPath();
+				
+				// Get first point
+				const firstPointId = spline.pointIds[0];
+				const firstPoint = state.dataStructure.points[firstPointId];
+				elements.lightsCtx.moveTo(firstPoint.x, firstPoint.y);
+				
+				// Draw lines to all points
+				for (let i = 1; i < spline.pointIds.length; i++) {
+					const pointId = spline.pointIds[i];
+					const point = state.dataStructure.points[pointId];
+					elements.lightsCtx.lineTo(point.x, point.y);
+				}
+				
+				// Check if this spline should be highlighted (either it's the active spline or it's in the same network)
+				const shouldHighlight = splineId === state.splineCreation.activeSplineId || 
+					(activeNetworkId && state.dataStructure.networks.some(network => 
+						network.id === activeNetworkId && network.splineIds.includes(splineId)
+					));
+				
+				// Highlight if active or in same network
+				if (shouldHighlight) {
+					elements.lightsCtx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
+					elements.lightsCtx.lineWidth = 2;
+				} else {
+					elements.lightsCtx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+					elements.lightsCtx.lineWidth = 1;
+				}
+				
+				elements.lightsCtx.stroke();
+			}
+		}
+	};
     
     // Draw all control points
     const drawControlPoints = () => {
