@@ -43,6 +43,7 @@ Add animated Christmas lights to your photos and enhance them with AI.
 3. **Customize Lights**
    - Use left sidebar sliders to adjust density, speed, and glow
    - Click color bar to add/change colors for your lights
+   - Click "Use Independent Colors" to customize colors for each spline network separately
 
 4. **Enhance Your Image**
    - Click "Enhance Image" when you're happy with your design
@@ -55,6 +56,8 @@ Add animated Christmas lights to your photos and enhance them with AI.
 - "Toggle Line Data" helps you place lights along edges of buildings
 - "Undo" removes your last action
 - "Clear All" removes all lights to start over
+- "Toggle Animation" pauses/plays the light animation
+- "Hide/Show Splines" toggles visibility of the paths you've drawn
 
 That's it! Enjoy creating your custom Christmas light display.
 
@@ -227,6 +230,13 @@ Located in the middle of the sidebar:
   - Colors between markers are automatically blended
   - Lights change color based on their position in the animation sequence
 
+- **Independent Color Mode**:
+  - Click "Use Independent Colors" button to enable separate color settings for each spline network
+  - When enabled, each distinct path network can have its own color scheme
+  - The color bar automatically displays and edits the colors for the selected/active network
+  - Click on any point in a network to select it and edit its colors
+  - Button text changes to "Use Shared Colors" when in independent mode
+
 #### Speed Slider
 
 Located below the color bar:
@@ -290,7 +300,16 @@ Once you're satisfied with your light setup, you can apply AI enhancement:
 - When drawing paths, you can create complex networks of connected lights
 - Lights will flow through the entire network in a consistent pattern
 - You can create loops, branches, and multiple isolated networks
-- Color cycling is synchronized across connected paths
+- Color cycling is synchronized across connected paths in the same network
+- With independent colors enabled, each network can have its own distinct color scheme
+
+#### Spline Networks
+- The app automatically detects and groups connected splines into "networks"
+- A network is a collection of paths that are connected at one or more points
+- Lights flow continuously through all paths in a network
+- When using independent colors, each network maintains its own color settings
+- Select any point in a network to make that network active for color editing
+- Networks are automatically rebuilt when paths are connected or disconnected
 
 #### Error Handling
 - If servers are unavailable, the app falls back to basic mode
@@ -394,7 +413,7 @@ Once you're satisfied with your light setup, you can apply AI enhancement:
   - `handlePointPlacement()`: Places points based on user clicks
   - `snapToLine()`: Aligns points with detected lines
   - `createPoint()`, `createSpline()`: Manages data structures
-  - `buildSplineNetworks()`: Connects multiple splines into networks
+  - `buildSplineNetworks()`: Creates networks from connected splines
 - **Implementation**: Uses a sophisticated state machine for interactions
 - **Integration**: Creates the interactive drawing system for light paths
 
@@ -403,10 +422,13 @@ Once you're satisfied with your light setup, you can apply AI enhancement:
 - **Key Functions**:
   - `addColorMarker()`: Adds color positions to the gradient
   - `updateColorBarGradient()`: Updates the visual color bar
-  - `getColorFromMarkers()`: Determines colors based on position
+  - `getColorFromMarkers()`: Determines colors based on position and network
   - `interpolateColors()`: Blends between color markers
+  - `toggleIndependentColors()`: Switches between shared and network-specific colors
+  - `updateColorBarForActiveNetwork()`: Updates color bar display for selected network
+  - `ensureNetworksHaveColorMarkers()`: Initializes color data for networks
 - **Implementation**: Uses DOM manipulation for the color bar and color pickers
-- **Integration**: Provides the color management system for the lights
+- **Integration**: Provides color management system with per-network customization
 
 #### `ChristmasLights.js`
 - **Purpose**: Handles animation and rendering of the Christmas lights
@@ -416,6 +438,9 @@ Once you're satisfied with your light setup, you can apply AI enhancement:
   - `drawLightWithGlow()`: Creates the light effect with glow
   - `calculateNetworkLightPoints()`: Determines light positions along paths
   - `getDepthAtPoint()`: Uses depth data for 3D-like effects
+  - `drawNetworkLights()`: Renders lights for each network with appropriate colors
+  - `toggleAnimation()`: Pauses/plays the animation
+  - `toggleSplines()`: Shows/hides the spline paths
 - **Implementation**: Uses requestAnimationFrame for smooth animation
 - **Integration**: Creates the visual light effects along user-drawn paths
 
