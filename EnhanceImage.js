@@ -204,8 +204,8 @@ const EnhanceModule = (function() {
         formData.append('background_prompt', "colorful, multi-color christmas lights, dark home at twilight, adorned with very vibrant Christmas lights in multiple colors twinkling along the roofline which are the only source of light, reflecting the colorful glow, cinematic lighting, 8k resolution");
         formData.append('foreground_prompt', "cloudy night sky, very bright multi-color christmas lights, breathtaking nightscape atmosphere, high dynamic range, perfect exposure, crystal clear, photorealistic, detailed, 8k resolution, professional photography");
         formData.append('negative_prompt', "dim lights, warm lamp light");
-        formData.append('preserve_original_subject', '0.35');
-        formData.append('original_background_depth', (state.averageDepth - .1).toString());
+        formData.append('preserve_original_subject', '0.45');
+        formData.append('original_background_depth', (state.averageDepth).toString());
         formData.append('keep_original_background', 'true');
         formData.append('light_source_strength', '1');
         formData.append('output_format', 'png');
